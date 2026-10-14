@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saathi – Mic Format Tester</title>
+  <!-- QR Code library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <style>
+    :root {
+      --teal: #0c7680;
+      --navy: #132438;
+      --cream: #ece7de;
+      --saffron: #e26d19;
+      --green: #1e834d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--cream);
+      color: var(--navy);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+      gap: 20px;
+    }
+    h1 { font-size: 26px; font-weight: 800; text-align: center; color: var(--teal); letter-spacing: -0.03em; }
+    p.sub { font-size: 15px; color: #53677d; text-align: center; margin-top: -8px; }
+
+    .card {
+      background: var(--cream);
+      border-radius: 24px;
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 8px 8px 20px rgba(178,168,152,0.5), -8px -8px 20px rgba(255,255,255,0.95);
+      border: 1px solid rgba(255,255,255,0.85);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .card h2 { font-size: 18px; font-weight: 800; }
+
+    #record-btn {
+      width: 100%;
+      height: 72px;
+      border-radius: 20px;
+      font-size: 20px;
+      font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.35);
+      cursor: pointer;
+      background: linear-gradient(145deg, #0f8691 0%, #08616a 100%);
+      color: #fff;
+      box-shadow: 7px 7px 18px rgba(178,168,152,0.5), -7px -7px 18px rgba(255,255,255,0.95), 0 8px 24px rgba(12,118,128,0.35);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    #record-btn.recording {
+      background: linear-gradient(145deg, #e26d19 0%, #b84c06 100%);
+      box-shadow: 7px 7px 18px rgba(178,168,152,0.5), -7px -7px 18px rgba(255,255,255,0.95), 0 8px 24px rgba(226,109,25,0.4);
+      animation: breathe 1.6s infinite alternate ease-in-out;
+    }
+    @keyframes breathe { 0%{transform:scale(1)} 100%{transform:scale(1.025)} }
+
+    #countdown {
+      text-align: center;
+      font-size: 40px;
+      font-weight: 900;
+      color: var(--saffron);
+      min-height: 56px;
+    }
+
+    #results {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .result-row {
+      background: #e2ddd4;
+      border-radius: 14px;
+      padding: 10px 14px;
+      box-shadow: inset 3px 3px 7px rgba(178,168,152,0.45), inset -3px -3px 7px rgba(255,255,255,0.9);
+      font-size: 14px;
+    }
+    .result-row strong { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--teal); }
+    .result-row span { font-size: 16px; font-weight: 800; color: var(--navy); word-break: break-all; }
+
+    audio {
+      width: 100%;
+      border-radius: 12px;
+      height: 52px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 800;
+      align-self: center;
+    }
+    .status-pill.idle    { background:#e2ddd4; color:#53677d; box-shadow: inset 2px 2px 5px rgba(178,168,152,0.4), inset -2px -2px 5px rgba(255,255,255,0.9); }
+    .status-pill.success { background: #e5f6ed; color: var(--green); }
+    .status-pill.error   { background: #fdf0ee; color: #c0392b; }
+
+    /* Supported formats table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 6px 8px; color: var(--teal); font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; font-size: 11px; }
+    td { padding: 8px 8px; border-top: 1px solid rgba(178,168,152,0.25); }
+    td:last-child { font-weight: 700; }
+    .yes { color: var(--green); }
+    .no  { color: #c0392b; }
+
+    /* QR section */
+    #qr-section { text-align: center; }
+    #qr-canvas { border-radius: 16px; padding: 12px; background: #fff;
+      box-shadow: 8px 8px 20px rgba(178,168,152,0.5), -8px -8px 20px rgba(255,255,255,0.95); }
+    #qr-url { font-size: 13px; color: #53677d; margin-top: 8px; word-break: break-all; }
+
+    .divider { height: 1px; background: rgba(178,168,152,0.35); width: 100%; }
+  </style>
+</head>
+<body>
+
+<h1>🎙️ Saathi Mic Tester</h1>
+<p class="sub">Cross-device audio format detection · 5-second recording</p>
+
+<!-- Device info -->
+<div class="card">
+  <h2>📱 This Device</h2>
+  <div id="results">
+    <div class="result-row"><strong>User Agent</strong><span id="ua">—</span></div>
+    <div class="result-row"><strong>Detected MIME type used</strong><span id="mime-used">—</span></div>
+    <div class="result-row"><strong>Blob size</strong><span id="blob-size">—</span></div>
+    <div class="result-row"><strong>Recording duration</strong><span id="rec-duration">—</span></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Supported formats probe -->
+  <h2>📋 Format Support on this Device</h2>
+  <table>
+    <thead><tr><th>MIME Type</th><th>Supported?</th></tr></thead>
+    <tbody id="formats-table"></tbody>
+  </table>
+</div>
+
+<!-- Record -->
+<div class="card">
+  <h2>▶ Record & Playback</h2>
+  <div id="countdown"></div>
+  <button id="record-btn">🎙️ Tap to Record 5s</button>
+  <div id="status" class="status-pill idle">Idle – tap button to start</div>
+  <audio id="playback" controls style="display:none;"></audio>
+</div>
+
+<!-- QR Code to share this page on phones -->
+<div class="card" id="qr-section">
+  <h2>📲 Open on your phones</h2>
+  <p style="font-size:14px;color:#53677d;">Scan this QR code to open on Android / iPhone on the same Wi-Fi:</p>
+  <canvas id="qr-canvas"></canvas>
+  <div id="qr-url"></div>
+</div>
+
+<script>
+  // ─── Populate device info ────────────────────────────────────────────────────
+  document.getElementById('ua').textContent = navigator.userAgent;
+
+  // ─── Probe all common audio MIME types ──────────────────────────────────────
+  const mimeTypes = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+    'audio/mp4;codecs=mp4a.40.2',
+    'audio/mp4',
+    'audio/aac',
+    'audio/mpeg',
+    'audio/wav',
+  ];
+
+  const tbody = document.getElementById('formats-table');
+  mimeTypes.forEach(mt => {
+    const supported = MediaRecorder.isTypeSupported(mt);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><code>${mt}</code></td><td class="${supported ? 'yes' : 'no'}">${supported ? '✅ YES' : '❌ NO'}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // ─── Pick best supported MIME ─────────────────────────────────────────────
+  function pickMime() {
+    for (const mt of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(mt)) return mt;
+    }
+    return ''; // browser default
+  }
+
+  // ─── Recording logic ─────────────────────────────────────────────────────
+  const btn    = document.getElementById('record-btn');
+  const status = document.getElementById('status');
+  const audio  = document.getElementById('playback');
+  const cdEl   = document.getElementById('countdown');
+
+  let mediaRecorder = null;
+  let chunks = [];
+  let recording = false;
+  let countdownTimer = null;
+
+  btn.addEventListener('click', async () => {
+    if (recording) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime   = pickMime();
+      const opts   = mime ? { mimeType: mime } : {};
+      mediaRecorder = new MediaRecorder(stream, opts);
+      chunks = [];
+      recording = true;
+
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+      const startTime = Date.now();
+
+      mediaRecorder.onstop = () => {
+        recording = false;
+        stream.getTracks().forEach(t => t.stop());
+        clearInterval(countdownTimer);
+        cdEl.textContent = '';
+        btn.classList.remove('recording');
+        btn.textContent = '🎙️ Tap to Record 5s';
+
+        const blobMime = mediaRecorder.mimeType || mime || 'audio/webm';
+        const blob     = new Blob(chunks, { type: blobMime });
+        const url      = URL.createObjectURL(blob);
+        const elapsed  = ((Date.now() - startTime) / 1000).toFixed(1);
+
+        // Populate result fields
+        document.getElementById('mime-used').textContent    = blobMime;
+        document.getElementById('blob-size').textContent    = `${(blob.size / 1024).toFixed(1)} KB`;
+        document.getElementById('rec-duration').textContent = `${elapsed}s`;
+
+        audio.src = url;
+        audio.style.display = 'block';
+
+        status.className = 'status-pill success';
+        status.textContent = `✅ Done! MIME: ${blobMime}`;
+      };
+
+      mediaRecorder.start();
+      btn.classList.add('recording');
+      btn.textContent = '🔴 Recording…';
+      status.className = 'status-pill idle';
+      status.textContent = 'Recording…';
+
+      // Countdown 5s
+      let remaining = 5;
+      cdEl.textContent = remaining;
+      countdownTimer = setInterval(() => {
+        remaining--;
+        cdEl.textContent = remaining > 0 ? remaining : '';
+        if (remaining <= 0) {
+          clearInterval(countdownTimer);
+          mediaRecorder.stop();
+        }
+      }, 1000);
+
+    } catch (err) {
+      status.className = 'status-pill error';
+      status.textContent = `❌ Error: ${err.message}`;
+      btn.classList.remove('recording');
+      btn.textContent = '🎙️ Tap to Record 5s';
+      recording = false;
+    }
+  });
+
+  // ─── QR Code for network URL ─────────────────────────────────────────────
+  // Use the current page URL so it works from any server
+  const pageUrl = window.location.href;
+  document.getElementById('qr-url').textContent = pageUrl;
+
+  if (typeof QRCode !== 'undefined') {
+    QRCode.toCanvas(document.getElementById('qr-canvas'), pageUrl, {
+      width: 220,
+      color: { dark: '#132438', light: '#ffffff' },
+      errorCorrectionLevel: 'H',
+    }, err => { if (err) console.error('QR error:', err); });
+  } else {
+    // Fallback: use Google Charts API
+    const img = document.createElement('img');
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(pageUrl)}&color=132438&bgcolor=ffffff`;
+    img.style.borderRadius = '12px';
+    document.getElementById('qr-canvas').replaceWith(img);
+  }
+</script>
+</body>
+</html>

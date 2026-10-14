@@ -1,0 +1,10 @@
+{
+  "description": "A voice-first assistant that helps senior citizens in India fill bank forms in their native languages, ensuring a simple and trustworthy experience.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
