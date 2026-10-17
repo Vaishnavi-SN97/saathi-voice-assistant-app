@@ -56,6 +56,11 @@
 - New test file `server/src/fix-dob-display.test.ts` (4 cases): month-name dates in 3 languages, and the WhatsApp text-only fallback. `src/p3.test.ts` updated for the new date format.
 - NOT fixed, blocked: document reading (Aadhaar/PAN capture) needs Gemini, and the free key is at its daily cap (429 RESOURCE_EXHAUSTED, ~12 h to reset, limit 20 requests/day). Fill `GEMINI_API_KEY_BACKUP` with a second key to double it, or wait for the reset. Everything else on that screen works.
 
+## Phone use (Expo Go question)
+- Expo Go runs React Native and cannot load this Vite / React-DOM bundle. Offered three paths (open the deployed URL on the phone, an Expo WebView wrapper, or a full React Native port); the chosen path is to use the deployed site on the phone, which is what the app was designed for.
+- Mic and camera need a secure context, so testing over a LAN IP (http://192.168.x.x) will NOT work: deploy to Vercel (https) and open that on the phone.
+- Made "Add to Home Screen" behave like an app: web/public/manifest.webmanifest (standalone, portrait, brand colours, shortcut to /bank) plus generated icons (192, 512, maskable, 180 apple-touch) from the Saathi logo, and the matching meta tags in index.html.
+
 ## Deploy ready (DEPLOY-NOW)
 - `npm run keys-check`: one tiny real call per service. Result today: Gemini PASS (model fallback in use), all four Sarvam checks FAIL with **HTTP 402 insufficient_quota_error "No credits available"** - the Sarvam account is out of credits, not a code or key fault. Sarvam errors now carry the upstream status/code so logs and scripts say "402 no credits" instead of a vague "Speech service failed".
 - Speech-to-text is judged independently (it builds its own 22 kHz WAV and converts it), so it is not reported as broken just because text-to-speech is down. The ffmpeg conversion to 16 kHz mono was confirmed working.

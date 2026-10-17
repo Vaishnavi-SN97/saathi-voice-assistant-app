@@ -81,6 +81,15 @@ messages still go out, but as text only.
 5. **Approve** it: the customer screen flips to approved by itself and the QR appears; a WhatsApp arrives if consent was given.
 6. **Check-in** tab → scan that QR → sign → **Complete**: status becomes signed and the PDF carries the signature.
 
+## 6. Put it on the phone's home screen
+
+The app is a phone web app: open the Vercel URL in **Chrome (Android)** or **Safari (iOS)** and use **Add to Home
+Screen**. It then launches full screen with the Saathi icon and no browser bars, and the microphone, camera and
+QR all work because Vercel serves it over https.
+
+Do NOT test from a LAN address like : browsers only allow the microphone and camera on
+https or localhost, so those features will be dead. Deploy first, then open the https URL on the phone.
+
 ## 6. Cold starts (free plan)
 
 Render's free plan sleeps after about 15 minutes idle and takes 30–60 seconds to wake, so the first call after a
