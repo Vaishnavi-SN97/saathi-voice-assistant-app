@@ -50,3 +50,21 @@ describe("WhatsApp still goes out when the server is not public", () => {
     assert.match(live.sent[0].mediaUrl[0], /^https:\/\/api\.example\.test\/media\/qr-1\?token=/);
   });
 });
+
+describe("Gemini model fallback (the free daily cap is per model)", () => {
+  it("keeps the configured model first and always has spares behind it", async () => {
+    const { DEFAULT_MODELS, modelOrder } = await import("./services/gemini.js");
+    assert.ok(DEFAULT_MODELS.length >= 3, "one model alone means one daily cap");
+    assert.deepEqual(modelOrder(undefined), DEFAULT_MODELS);
+    assert.deepEqual(modelOrder(""), DEFAULT_MODELS);
+
+    const chosen = modelOrder("gemini-3.1-flash-lite");
+    assert.equal(chosen[0], "gemini-3.1-flash-lite", "GEMINI_MODEL must be tried first");
+    assert.ok(chosen.length > 1, "fallbacks must remain");
+    assert.equal(new Set(chosen).size, chosen.length, "no model may be tried twice");
+
+    // a comma-separated list sets the whole order
+    const list = modelOrder("a, b ,c");
+    assert.deepEqual(list.slice(0, 3), ["a", "b", "c"]);
+  });
+});

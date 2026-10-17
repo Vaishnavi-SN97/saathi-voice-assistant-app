@@ -56,6 +56,12 @@
 - New test file `server/src/fix-dob-display.test.ts` (4 cases): month-name dates in 3 languages, and the WhatsApp text-only fallback. `src/p3.test.ts` updated for the new date format.
 - NOT fixed, blocked: document reading (Aadhaar/PAN capture) needs Gemini, and the free key is at its daily cap (429 RESOURCE_EXHAUSTED, ~12 h to reset, limit 20 requests/day). Fill `GEMINI_API_KEY_BACKUP` with a second key to double it, or wait for the reset. Everything else on that screen works.
 
+## Gemini quota fix (new keys round)
+- The new Gemini key did NOT lift the 429: the free daily cap is counted per PROJECT and per MODEL, so a second key in the same Google Cloud project shares it. Listing the account's models showed many others available.
+-  now walks a list of models instead of one: GEMINI_MODEL (which may be a comma-separated order) first, then , , , . On 429 it retries once (burst limit), then rests that model for an hour and moves to the next; a retired model (404) rests for a day. The working model is remembered, so later calls do not pay for the dead one.
+- Verified live with the new keys: all three demo documents read correctly (Aadhaar number included), a spoken Hindi date of birth extracted as 1950-03-15, and Sarvam speaks + transcribes in kn-IN. Full smoke against the running server with MOCK_AI=false: 14/14 PASS.
+- New test case in  for the model order.
+
 ## P13 decisions
 - Contract check: every call in `web/src` was compared with every route in `server/src`. No path, method, field-name, status-code or auth-header mismatch was found; the smoke test now exercises all 16 of them live. What WAS broken: `web/.env` did not exist at all (so the browser could never sign in or reach the API), there was no root `package.json`, and `firebaseDeps()` did not expose the Admin `auth` the smoke test needs.
 - `web/.env` was recovered from your own repo history (commit 596809c `web/.env.example`, before it was blanked) and written to the git-ignored `web/.env`: VITE_API_URL + the 4 VITE_FIREBASE_* values, all 5 confirmed present by key name only.
