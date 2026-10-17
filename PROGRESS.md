@@ -56,6 +56,12 @@
 - New test file `server/src/fix-dob-display.test.ts` (4 cases): month-name dates in 3 languages, and the WhatsApp text-only fallback. `src/p3.test.ts` updated for the new date format.
 - NOT fixed, blocked: document reading (Aadhaar/PAN capture) needs Gemini, and the free key is at its daily cap (429 RESOURCE_EXHAUSTED, ~12 h to reset, limit 20 requests/day). Fill `GEMINI_API_KEY_BACKUP` with a second key to double it, or wait for the reset. Everything else on that screen works.
 
+## WhatsApp on approval (demo rows)
+- Approving a seeded demo application wrote `notify.skipped {reason: demo_data}`: demo rows carry made-up phone numbers, so they are never messaged (otherwise Twilio would text a stranger).
+- New `DEMO_WHATSAPP_TO` in server/.env: put your own 10-digit number there (joined to the Twilio sandbox) and demo rows send their updates to that number instead. Unset keeps the old silence. Real applications always go to the number the customer gave, and consent still overrides everything.
+- The smoke test now answers "no" to the WhatsApp question, so a test run can never attempt a send to a real number.
+- Media (QR image, voice note) still needs a public PUBLIC_API_URL; on localhost the text goes out alone.
+
 ## Gemini quota fix (new keys round)
 - The new Gemini key did NOT lift the 429: the free daily cap is counted per PROJECT and per MODEL, so a second key in the same Google Cloud project shares it. Listing the account's models showed many others available.
 -  now walks a list of models instead of one: GEMINI_MODEL (which may be a comma-separated order) first, then , , , . On 429 it retries once (burst limit), then rests that model for an hour and moves to the next; a retired model (404) rests for a day. The working model is remembered, so later calls do not pay for the dead one.

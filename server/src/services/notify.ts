@@ -72,11 +72,15 @@ export class Notifier {
       return { sent: false, reason };
     };
     if (this.env.NOTIFY_MODE === "off") return skip("mode_off");
-    // Seeded demo rows carry made-up phone numbers: never message them.
-    if (app.demo === true) return skip("demo_data");
     if (app.notify?.consent !== true) return skip("no_consent");
-    const phone = String(app.notify?.phone ?? "");
-    if (!/^[6-9]\d{9}$/.test(phone)) return skip("no_phone");
+
+    // Seeded demo rows carry made-up phone numbers, so they are never messaged at their own number.
+    // DEMO_WHATSAPP_TO redirects them to your test phone instead, which makes a live demo possible without
+    // texting a stranger. Real applications always go to the number the customer gave.
+    const demoTo = String(this.env.DEMO_WHATSAPP_TO ?? "").replace(/[\s-]/g, "").replace(/^(\+?91)/, "");
+    const phone = app.demo === true ? demoTo : String(app.notify?.phone ?? "");
+    if (app.demo === true && !demoTo) return skip("demo_data");
+    if (!/^[6-9]\d{9}$/.test(phone)) return skip(app.demo === true ? "demo_number_invalid" : "no_phone");
     if (!this.send) return skip("no_credentials");
 
     const lang = toLang(app.language) ?? "en";
@@ -93,7 +97,7 @@ export class Notifier {
     if (extra.mediaId && !withMedia) console.warn(`notify: sending ${event} without audio/QR because PUBLIC_API_URL is not reachable from the internet`);
     try {
       await this.send(msg);
-      await audit(this.store, "system", "notify.sent", appId, { event, media: withMedia });
+      await audit(this.store, "system", "notify.sent", appId, { event, media: withMedia, demoNumber: app.demo === true });
       return { sent: true };
     } catch (e) {
       console.error("WhatsApp send failed:", (e as Error).message);

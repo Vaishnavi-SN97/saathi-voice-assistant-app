@@ -135,7 +135,7 @@ await step("POST /applications (create, first question + audio)", async () => {
 
 await step("POST /interview/answer + /confirm (8 fields)", async () => {
   must(appId, "no application");
-  const answers = ["Ramesh Shetty", "15/03/1950", "9876543210", "12 MG Road, Bengaluru", "retired", "Sita Shetty", "spouse", "yes"];
+  const answers = ["Ramesh Shetty", "15/03/1950", "9876543210", "12 MG Road, Bengaluru", "retired", "Sita Shetty", "spouse", "no"]; // "no" to WhatsApp: a test run must never message a real number
   for (const [i, text] of answers.entries()) {
     const a = await call(customerToken, "POST", "/interview/answer", { appId, text, source: "typed" });
     must(a.status === 200, `answer ${i + 1} -> ${a.status} ${short(a.body)}`);

@@ -68,3 +68,40 @@ describe("Gemini model fallback (the free daily cap is per model)", () => {
     assert.deepEqual(list.slice(0, 3), ["a", "b", "c"]);
   });
 });
+
+describe("WhatsApp for seeded demo applications", () => {
+  it("is silent by default and goes to your test phone when DEMO_WHATSAPP_TO is set", async () => {
+    const { loadEnv } = await import("./env.js");
+    const { MemoryStore } = await import("./store.js");
+    const { MediaStore } = await import("./mediaStore.js");
+    const { Notifier } = await import("./services/notify.js");
+
+    const creds = { MOCK_AI: "true", PUBLIC_API_URL: "https://api.example.test", TWILIO_ACCOUNT_SID: "AC", TWILIO_AUTH_TOKEN: "t", TWILIO_WHATSAPP_FROM: "+14155238886" };
+    const demoApp = { language: "kn-IN", demo: true, notify: { consent: true, phone: "9000000004" } };
+    const realApp = { language: "hi-IN", notify: { consent: true, phone: "9876543210" } };
+    const make = (extra: Record<string, string>) => {
+      const sent: any[] = [];
+      const store = new MemoryStore();
+      return { sent, n: new Notifier(loadEnv({ ...creds, ...extra } as NodeJS.ProcessEnv), store, new MediaStore(store, "s"), async (m) => { sent.push(m); }) };
+    };
+
+    // nothing set: a made-up demo number must never be messaged
+    const quiet = make({});
+    assert.deepEqual(await quiet.n.notify("demo-1", demoApp, "approved"), { sent: false, reason: "demo_data" });
+    assert.equal(quiet.sent.length, 0);
+
+    // set: the demo update arrives on the test phone, not on the made-up number
+    const live = make({ DEMO_WHATSAPP_TO: "+91 98765 11111" });
+    assert.deepEqual(await live.n.notify("demo-1", demoApp, "approved"), { sent: true });
+    assert.equal(live.sent[0].to, "whatsapp:+919876511111");
+
+    // a real application still goes to the number the customer gave
+    const real = make({ DEMO_WHATSAPP_TO: "9876511111" });
+    await real.n.notify("real-1", realApp, "approved");
+    assert.equal(real.sent[0].to, "whatsapp:+919876543210");
+
+    // consent still wins over everything
+    const noConsent = make({ DEMO_WHATSAPP_TO: "9876511111" });
+    assert.deepEqual(await noConsent.n.notify("demo-1", { ...demoApp, notify: { consent: false } }, "approved"), { sent: false, reason: "no_consent" });
+  });
+});

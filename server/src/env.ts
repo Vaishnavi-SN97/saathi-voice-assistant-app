@@ -19,6 +19,11 @@ const schema = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_WHATSAPP_FROM: z.string().optional(),
+  /**
+   * Seeded demo applications carry made-up phone numbers, so they are never messaged.
+   * Put YOUR OWN number here (10 digits, joined to the Twilio sandbox) to receive their updates while demonstrating.
+   */
+  DEMO_WHATSAPP_TO: z.string().optional(),
   NOTIFY_MODE: z.enum(["direct", "off"]).default("direct"),
   MOCK_AI: bool("false"),
   QR_JWT_SECRET: z.string().default("dev-only-secret-change-me"),
