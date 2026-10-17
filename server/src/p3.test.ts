@@ -57,7 +57,8 @@ describe("validate + read-back", () => {
   });
 });
 
-describe("Gemini (real, needs GEMINI_API_KEY)", { skip: !process.env.GEMINI_API_KEY }, () => {
+// Opt-in: the free Gemini tier allows only ~20 requests/day, so run with RUN_REAL_AI=1 when you want these.
+describe("Gemini (real, needs GEMINI_API_KEY and RUN_REAL_AI=1)", { skip: !process.env.GEMINI_API_KEY || !process.env.RUN_REAL_AI }, () => {
   const ex = createExtractor(loadEnv({ ...process.env, MOCK_AI: "false" } as NodeJS.ProcessEnv));
   it("extracts a Hindi occupation as a choice with transliteration", { timeout: 60000 }, async () => {
     const r = await ex.extractAnswer(f("occupation"), "main kisan hoon", "hi");

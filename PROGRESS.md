@@ -29,6 +29,15 @@
 - `form.json` uses `fields` (not `questions`) and carries `label` + `options` per field.
 - Non-image uploads >= 900 KB are rejected (e.g. an oversized pdf).
 
+- [x] P5 documents (extractDoc, POST /documents/extract, POST /applications/:id/check, fake demo docs in server/assets/demo-docs)
+
+## P5 decisions
+- Check: any blocking mismatch moves docs_pending -> needs_fix; otherwise the status stays and `readiness.eligible=true` (POST /submit in P6 does the move to ready_for_review). mistakesCaught counts each (code, document) once, the first time it is caught.
+- Documents are uploaded only while status is docs_pending or needs_fix. PAN number and IFSC are kept in `fields`; the Aadhaar number is reduced to aadhaarLast4 + valid. Account numbers are never read.
+- A blurry photo reports only PHOTO_BLURRY (no *_INVALID on top). Blur = Laplacian variance < 12 (fake cards ~1500, blurred ~3) OR Gemini blurry flag.
+- MOCK_AI reads the FAKE demo cards by decoding their QR code (jsqr); real Gemini reads the printed text. `npm run make-docs` regenerates; `npm run docs` runs the scenarios; `npm run docs -- --real` reads the clean set with real Gemini (3 calls).
+- Gemini retry now also covers transient 500/503 ("high demand"), not just 429. The free tier allows ~20 requests/day: the real Gemini tests are opt-in via RUN_REAL_AI=1.
+
 ## P4 decisions
 - Readiness: a spelled_differently name earns half the 15 name points (SPEC gives no partial rule). The quick-approve badge needs score >= 90 AND all 3 documents present and clear (a missing passbook alone scores exactly 90).
 - Matcher: an initial that only one name has ("Ramesh K Shetty" vs "Ramesh Shetty") caps the result at spelled_differently, otherwise Jaro-Winkler alone would say match (0.956). Initials that the other name spells out ("R Shetty") are expanded and match.
@@ -40,6 +49,7 @@
 - `server/src/services/interview-engine.ts`: read-back sentences, "didn't catch that", "say yes or no", "let's type it", Yes/No words.
 - `server/src/services/scam-shield.ts`: scam warning (hi, kn). SPEC's English wording is exact; the translations are mine.
 - `server/src/services/mismatches.ts` (all 8 messages + document names आधार/पैन कार्ड/पासबुक, ಆಧಾರ್/ಪ್ಯಾನ್ ಕಾರ್ಡ್/ಪಾಸ್‌ಬುಕ್) and `readiness.ts` (to-dos), hi + kn.
+- `server/src/services/gemini.ts`: none (prompts are English). Demo docs are English only.
 - `server/src/services/yesno.ts`: hi/kn yes/no word lists (colloquial variants may be missing).
 - Watch: formal vs informal "you" (आप / ನೀವು), "whatsapp" spelling (व्हाट्सऐप / ವಾಟ್ಸಾಪ್), how dates and digits are read aloud.
 

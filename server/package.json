@@ -8,7 +8,9 @@
     "start": "tsx src/index.ts",
     "test": "tsx --test src/*.test.ts",
     "set-banker": "tsx scripts/set-banker-claim.ts",
-    "interview": "tsx scripts/run-interview.ts"
+    "interview": "tsx scripts/run-interview.ts",
+    "make-docs": "tsx scripts/make-fake-docs.ts",
+    "docs": "tsx scripts/run-documents.ts"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",
@@ -22,6 +24,7 @@
     "form-data": "^4.0.6",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
+    "jsqr": "^1.4.0",
     "multer": "^2.4.0",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",

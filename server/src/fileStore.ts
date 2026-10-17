@@ -28,9 +28,9 @@ export class FileStore {
   constructor(private store: Store) {}
   private path = (appId: string, kind: string) => `applications/${appId}/files/${kind}`;
 
-  async put(appId: string, kind: FileKind, data: Buffer, mime: string) {
+  async put(appId: string, kind: FileKind, data: Buffer, mime: string, opts: { precompressed?: boolean } = {}) {
     let bytes = data, outMime = mime;
-    if (mime.startsWith("image/")) {
+    if (mime.startsWith("image/") && !(opts.precompressed && data.length < MAX_BYTES)) {
       bytes = await compressImage(data);
       outMime = "image/jpeg";
     } else if (data.length >= MAX_BYTES) {

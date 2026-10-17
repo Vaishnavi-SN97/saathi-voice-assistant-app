@@ -134,7 +134,7 @@ export function buildMismatches(app: AppLike): Mismatch[] {
     const d = app.documents?.[k];
     if (!d) { add("DOC_MISSING", k); continue; }
     if (d.blurry) add("PHOTO_BLURRY", k);
-    if (d.valid === false) add(k === "aadhaar" ? "AADHAAR_INVALID" : k === "pan" ? "PAN_INVALID" : "IFSC_INVALID", k);
+    if (d.valid === false && !d.blurry) add(k === "aadhaar" ? "AADHAAR_INVALID" : k === "pan" ? "PAN_INVALID" : "IFSC_INVALID", k);
   }
 
   // What the customer told us is the reference: judge each document against it. Document-vs-document pairs only

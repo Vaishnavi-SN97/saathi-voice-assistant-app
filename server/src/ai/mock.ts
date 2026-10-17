@@ -1,4 +1,6 @@
 import type { Field, Lang } from "../form.js";
+import type { DocKind } from "../services/doc-types.js";
+import { mockExtractDoc } from "../services/doc-mock.js";
 import { classifyYesNo } from "../services/yesno.js";
 
 /** Canned stand-ins used when MOCK_AI=true. */
@@ -21,6 +23,7 @@ const toAscii = (s: string) => s.replace(/[०-९]/g, (c) => String(c.charCodeA
 
 /** Deterministic extractor for MOCK_AI: simple parsing of typed-style answers, confidence 0.9 on success. */
 export const mockExtractor = {
+  extractDoc: (kind: DocKind, image: Buffer, _mime: string) => mockExtractDoc(kind, image),
   async extractAnswer(f: Field, text: string, _lang: Lang): Promise<Extracted> {
     const t = text.trim();
     const none: Extracted = { value: null, valueEn: null, confidence: 0 };
