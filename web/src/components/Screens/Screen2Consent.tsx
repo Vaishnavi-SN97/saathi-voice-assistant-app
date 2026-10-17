@@ -6,8 +6,8 @@ import {
   WarningBanner,
   BottomHelpBar,
 } from "../UIComponents";
-import { speakText } from "../../utils/speech";
-import { LANG_CODE, useI18n } from "../../lib/i18n";
+import { useI18n } from "../../lib/i18n";
+import { speakServer } from "../../lib/speak";
 import { api, ApiError } from "../../lib/api";
 import { toQuestion, useSession } from "../../lib/session";
 import { useSpokenError } from "../../lib/spokenError";
@@ -40,7 +40,7 @@ export function Screen2Consent({
     { icon: "shield" as const, text: t("c3") },
   ];
 
-  const handleListenScreen = () => speakText(t("consentSpeech"), LANG_CODE[lang]);
+  const handleListenScreen = () => void speakServer(t("consentSpeech"), lang);
 
   // "I agree" creates the application (draft + consent) and gets the first question.
   const handleAgree = async () => {

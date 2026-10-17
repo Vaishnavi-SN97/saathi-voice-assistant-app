@@ -56,6 +56,13 @@
 - New test file `server/src/fix-dob-display.test.ts` (4 cases): month-name dates in 3 languages, and the WhatsApp text-only fallback. `src/p3.test.ts` updated for the new date format.
 - NOT fixed, blocked: document reading (Aadhaar/PAN capture) needs Gemini, and the free key is at its daily cap (429 RESOURCE_EXHAUSTED, ~12 h to reset, limit 20 requests/day). Fill `GEMINI_API_KEY_BACKUP` with a second key to double it, or wait for the reset. Everything else on that screen works.
 
+## Hindi / Kannada audio fix
+- Symptom: only English was audible. ROOT CAUSE: the first screens spoke through the BROWSER speech engine (`speakText`), not through Sarvam. Most devices ship English voices only, so hi-IN and kn-IN produced silence while en-IN worked. The language picker, the consent screen "Listen to this" and the help modal were all browser-voice.
+- Fix: those now call `speakServer()` (POST /tts -> Sarvam mp3, cached), with the browser voice kept only as a fallback when the server cannot be reached. `speakServer` also takes a pace, so the interview's "speak slower" no longer drops to the browser voice.
+- Verified against the running server with the exact calls the screens make: en/hi/kn each returned a distinct real mp3 (61/49/44 KB, audio/mpeg).
+- New test `server/src/fix-audio-languages.test.ts`: the same sentence in three languages must produce three different cached recordings, the cache is re-used on the second ask, and a slower pace is its own recording.
+- Browser speech is still used on purpose in two places: the crash screen (ErrorBoundary) and spoken error messages, because there the server may be exactly what failed.
+
 ## WhatsApp on approval (demo rows)
 - Approving a seeded demo application wrote `notify.skipped {reason: demo_data}`: demo rows carry made-up phone numbers, so they are never messaged (otherwise Twilio would text a stranger).
 - New `DEMO_WHATSAPP_TO` in server/.env: put your own 10-digit number there (joined to the Twilio sandbox) and demo rows send their updates to that number instead. Unset keeps the old silence. Real applications always go to the number the customer gave, and consent still overrides everything.

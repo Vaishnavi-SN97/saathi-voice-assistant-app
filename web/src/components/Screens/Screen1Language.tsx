@@ -5,8 +5,8 @@ import {
   LanguageCard,
   BottomHelpBar,
 } from "../UIComponents";
-import { speakText } from "../../utils/speech";
 import { LANG_NAME, useI18n } from "../../lib/i18n";
+import { speakServer } from "../../lib/speak";
 import type { Language } from "../../types";
 
 const languages: {
@@ -66,9 +66,9 @@ export function Screen1Language({
             isSelected={l.lang !== null && lang === l.lang}
             onSelect={() => {
               if (l.lang) setLang(l.lang);
-              speakText(l.speechText, l.code);
+              void speakServer(l.speechText, l.lang ?? "en");
             }}
-            onSpeak={() => speakText(l.speechText, l.code)}
+            onSpeak={() => void speakServer(l.speechText, l.lang ?? "en")}
           />
         ))}
       </div>

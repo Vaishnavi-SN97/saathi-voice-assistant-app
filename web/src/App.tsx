@@ -12,8 +12,8 @@ import { Screen9Done } from "./components/Screens/Screen9Done";
 import { HindiFrames } from "./components/HindiFrames";
 import { ComponentShowcase } from "./components/ComponentShowcase";
 import { Icon } from "./components/Icons";
-import { speakText } from "./utils/speech";
-import { LANG_CODE, LanguageSwitcher, useI18n } from "./lib/i18n";
+import { LanguageSwitcher, useI18n } from "./lib/i18n";
+import { speakServer } from "./lib/speak";
 import { useServerMode } from "./lib/serverMode";
 import { ThemeToggle } from "./lib/theme";
 import { useSession } from "./lib/session";
@@ -66,12 +66,12 @@ export function App() {
   const handleRestart = () => {
     session.reset();
     navigate("/");
-    speakText("Welcome back to Saathi.", "en-IN");
+    void speakServer(t("chooseLang"), lang);
   };
 
   const handleOpenHelp = () => {
     setShowHelpModal(true);
-    speakText(t("helpLine"), LANG_CODE[lang]);
+    void speakServer(t("helpLine"), lang);
   };
 
   const common = { onNext: goToNext, onBack: goToBack, onOpenHelp: handleOpenHelp };
@@ -119,7 +119,7 @@ export function App() {
               type="button"
               onClick={() => {
                 setShowHelpModal(false);
-                speakText(t("callbackSpeech"), LANG_CODE[lang]);
+                void speakServer(t("callbackSpeech"), lang);
               }}
               className="help-callback-btn"
             >

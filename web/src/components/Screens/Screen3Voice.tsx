@@ -8,8 +8,7 @@ import {
   WarningBanner,
   BottomHelpBar,
 } from "../UIComponents";
-import { speakText } from "../../utils/speech";
-import { LANG_CODE, useI18n } from "../../lib/i18n";
+import { useI18n } from "../../lib/i18n";
 import { api, ApiError } from "../../lib/api";
 import { audioExt, canRecord, playUrl, startRecording, stopAudio, type RecordingHandle } from "../../lib/audio";
 import { toQuestion, useSession, type Question } from "../../lib/session";
@@ -71,7 +70,6 @@ export function Screen3Voice({
   const recorder = useRef<RecordingHandle | null>(null);
   useSpokenError(error?.text, appLang ?? "en");
 
-  const langCode = LANG_CODE[appLang ?? "en"];
 
   /** Play server audio; fall back to the browser voice if the file cannot play (not if autoplay is blocked). */
   const say = useCallback(
@@ -224,12 +222,7 @@ export function Screen3Voice({
     if (!target) return;
     if (!slowSpeech) return say(target.audioUrl, target.text);
     // Slower: ask the server for the same sentence at a lower pace (cached after the first time).
-    try {
-      const r = await api<{ audioUrl: string }>("/tts", { json: { text: target.text, language: appLang ?? "en", pace: SLOW_PACE } });
-      say(r.audioUrl, target.text);
-    } catch {
-      speakText(target.text, langCode, true);
-    }
+    await speakServer(target.text, appLang ?? "en", SLOW_PACE);
   };
 
   const handleToggleSlow = () => setSlowSpeech((s) => !s);
