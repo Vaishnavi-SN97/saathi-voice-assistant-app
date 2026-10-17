@@ -33,8 +33,8 @@ export const SEVERITY: Record<MismatchCode, Severity> = {
 const TEMPLATE: Record<MismatchCode, Msg> = {
   NAME_SPELLED_DIFFERENTLY: {
     en: "Your name on the {doc} is spelled a little differently. Please choose the correct spelling.",
-    hi: "आपके {doc} पर नाम की वर्तनी थोड़ी अलग है। कृपया सही वर्तनी चुनें।",
-    kn: "ನಿಮ್ಮ {doc} ನಲ್ಲಿ ಹೆಸರಿನ ಕಾಗುಣಿತ ಸ್ವಲ್ಪ ಬೇರೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಸರಿಯಾದ ಕಾಗುಣಿತವನ್ನು ಆರಿಸಿ.",
+    hi: "आपका नाम दो अलग तरह से लिखा है। कौन सा सही है?",
+    kn: "ನಿಮ್ಮ ಹೆಸರನ್ನು ಎರಡು ರೀತಿಯಲ್ಲಿ ಬರೆಯಲಾಗಿದೆ. ಯಾವುದು ಸರಿ?",
   },
   NAME_MISMATCH: {
     en: "The name on the {doc} does not match the name you told us. Please check.",

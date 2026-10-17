@@ -9,6 +9,7 @@ export interface Store {
   set(path: string, data: Doc): Promise<void>;
   /** Create a doc with an auto id under a collection path; returns the id. */
   add(collection: string, data: Doc): Promise<string>;
+  delete(path: string): Promise<void>;
 }
 
 export class FirestoreStore implements Store {
@@ -24,6 +25,9 @@ export class FirestoreStore implements Store {
     const ref = await this.db.collection(collection).add(data);
     return ref.id;
   }
+  async delete(path: string) {
+    await this.db.doc(path).delete();
+  }
 }
 
 export class MemoryStore implements Store {
@@ -38,5 +42,8 @@ export class MemoryStore implements Store {
     const id = randomUUID();
     this.docs.set(`${collection}/${id}`, data);
     return id;
+  }
+  async delete(path: string) {
+    this.docs.delete(path);
   }
 }

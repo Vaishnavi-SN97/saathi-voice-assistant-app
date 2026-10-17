@@ -38,8 +38,8 @@ export function ensureUser(): Promise<User> {
 }
 
 /** Fresh-enough ID token for the API (the SDK refreshes it when it is close to expiry). */
-export async function getIdToken(): Promise<string> {
-  return (await ensureUser()).getIdToken();
+export async function getIdToken(forceRefresh = false): Promise<string> {
+  return (await ensureUser()).getIdToken(forceRefresh);
 }
 
 /**

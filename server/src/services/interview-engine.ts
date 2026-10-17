@@ -3,6 +3,7 @@ import { audit } from "../audit.js";
 import type { AuthUser } from "../auth.js";
 import { AppError } from "../errors.js";
 import { form, toLang, type Field, type Lang } from "../form.js";
+import { mockExtractor as ruleExtractor } from "../ai/mock.js";
 import { assertTransition } from "../status.js";
 import { isValidDob, isValidMobile } from "./validators.js";
 import { ttsCached } from "./sarvam.js";
@@ -73,6 +74,11 @@ const T = {
     en: "Let's type it instead.",
     hi: "आइए इसे टाइप करें।",
     kn: "ಇದನ್ನು ಟೈಪ್ ಮಾಡೋಣ.",
+  },
+  busy: {
+    en: "The assistant is busy right now. Please type your answer in English letters, or try again in a minute.",
+    hi: "सहायक अभी व्यस्त है। कृपया अपना जवाब अंग्रेज़ी अक्षरों में लिखें, या एक मिनट बाद फिर कोशिश करें।",
+    kn: "ಸಹಾಯಕ ಈಗ ಬ್ಯುಸಿಯಾಗಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಇಂಗ್ಲಿಷ್ ಅಕ್ಷರಗಳಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ, ಅಥವಾ ಒಂದು ನಿಮಿಷದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   },
   yes: { en: "Yes", hi: "हाँ", kn: "ಹೌದು" },
   no: { en: "No", hi: "नहीं", kn: "ಇಲ್ಲ" },
@@ -157,7 +163,25 @@ export async function handleAnswer(ctx: Ctx, user: AuthUser, appId: string, text
   }
 
   // 2. Gemini extraction (current field only) -> validate
-  const ex = await ctx.extract.extractAnswer(f, text, lang);
+  let ex;
+  try {
+    ex = await ctx.extract.extractAnswer(f, text, lang);
+  } catch (e) {
+    if (!(e instanceof AppError) || e.code !== "upstream_error") throw e;
+    // The AI service is down or out of quota. Typed Latin-script text already is the value, so simple rules can read it.
+    // Spoken text (or typed Hindi/Kannada, which needs transliteration) cannot be trusted: ask for English typing instead.
+    if (source === "typed" && /^[\x20-\x7E]+$/.test(text)) ex = await ruleExtractor.extractAnswer(f, text, lang);
+    else {
+      await audit(ctx.store, user, "ai.unavailable", appId, { fieldId: f.id, source });
+      return {
+        state: "asking" as const,
+        aiBusy: true,
+        typingFallback: true,
+        message: await speak(ctx, T.busy[lang], lang),
+        question: await fieldOut(ctx, f, lang),
+      };
+    }
+  }
   const value = validate(f, ex.value);
   const lowConfidence = source === "voice" && ex.confidence < MIN_CONFIDENCE;
 

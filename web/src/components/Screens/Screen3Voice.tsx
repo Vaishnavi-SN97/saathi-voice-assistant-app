@@ -13,6 +13,7 @@ import { LANG_CODE, useI18n } from "../../lib/i18n";
 import { api, ApiError } from "../../lib/api";
 import { audioExt, canRecord, playUrl, startRecording, stopAudio, type RecordingHandle } from "../../lib/audio";
 import { toQuestion, useSession, type Question } from "../../lib/session";
+import { speakServer } from "../../lib/speak";
 
 const MAX_MS = 12_000;
 const SLOW_PACE = 0.75;
@@ -76,10 +77,10 @@ export function Screen3Voice({
       if (!audioUrl) return;
       playUrl(audioUrl).catch((e: unknown) => {
         if (e instanceof DOMException && e.name === "NotAllowedError") return; // user can tap "Listen again"
-        speakText(fallbackText, langCode, slowSpeech);
+        void speakServer(fallbackText, appLang ?? "en"); // stale link (10-minute token) or missing file: fresh /tts link, browser voice as last resort
       });
     },
-    [langCode, slowSpeech],
+    [appLang],
   );
 
   // Read each new question aloud once.
@@ -96,7 +97,10 @@ export function Screen3Voice({
   const fail = (e: unknown, retry?: () => void) => {
     setPhase((p) => (p === "confirming" ? p : "idle"));
     const status = e instanceof ApiError ? e.status : 0;
-    setError({ text: status === -1 ? t("notConfigured") : status === 0 ? t("netError") : t("genericError"), retry: status === -1 ? undefined : retry });
+    setError({
+      text: status === -1 ? t("notConfigured") : status === 0 ? t("netError") : status === 401 ? t("sessionExpired") : t("genericError"),
+      retry: status === -1 || status === 401 ? undefined : retry,
+    });
   };
 
   /** Apply the server's reply to /interview/answer. */

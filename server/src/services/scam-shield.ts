@@ -7,7 +7,7 @@ export interface ShieldResult { level: ShieldLevel; flagged: boolean; reasons: s
 export const SHIELD_WARNING: Record<Lang, string> = {
   en: "Never share your OTP or PIN with anyone, not even with us.",
   hi: "अपना ओटीपी या पिन किसी को न बताएं, हमें भी नहीं।",
-  kn: "ನಿಮ್ಮ ಒಟಿಪಿ ಅಥವಾ ಪಿನ್ ಅನ್ನು ಯಾರಿಗೂ ಹೇಳಬೇಡಿ, ನಮಗೂ ಹೇಳಬೇಡಿ.",
+  kn: "ನಿಮ್ಮ ಒಟಿಪಿ ಅಥವಾ ಪಿನ್ ಯಾರಿಗೂ ಹೇಳಬೇಡಿ, ನಮಗೂ ಬೇಡ.",
 };
 
 const WORD_DIGITS: Record<string, string> = {

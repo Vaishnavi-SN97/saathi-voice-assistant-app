@@ -17,7 +17,9 @@ export const requireAuth = (verify: TokenVerifier) => async (req: Request, _res:
     if (!m) throw new AppError(401, "unauthenticated", "Missing bearer token");
     try {
       req.user = await verify(m[1]);
-    } catch {
+    } catch (e) {
+      const why = (e as { code?: string; message?: string }) ?? {};
+      console.warn(`auth: ${req.method} ${req.path} rejected (${why.code ?? "error"}): ${String(why.message ?? e).slice(0, 160)}`);
       throw new AppError(401, "unauthenticated", "Invalid token");
     }
     next();
