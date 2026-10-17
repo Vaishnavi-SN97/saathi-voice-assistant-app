@@ -40,9 +40,15 @@ export interface Ctx {
   ttsCache: TtsCache;
 }
 
-export function createApp({ env, store, verifier, ai, extractor, sender }: Deps) {
+/** Everything the routes (and the admin scripts) need, built from the env and a store. */
+export function createCtx({ env, store, ai, extractor, sender }: Omit<Deps, "verifier">): Ctx {
   const media = new MediaStore(store, env.QR_JWT_SECRET);
-  const ctx: Ctx = { env, notifier: new Notifier(env, store, media, sender), store, files: new FileStore(store), media, ai: ai ?? createAi(env), extract: extractor ?? createExtractor(env), ttsCache: new TtsCache(media) };
+  return { env, notifier: new Notifier(env, store, media, sender), store, files: new FileStore(store), media, ai: ai ?? createAi(env), extract: extractor ?? createExtractor(env), ttsCache: new TtsCache(media) };
+}
+
+export function createApp(deps: Deps) {
+  const { env, verifier } = deps;
+  const ctx = createCtx(deps);
 
   const app = express();
   app.use(helmet());

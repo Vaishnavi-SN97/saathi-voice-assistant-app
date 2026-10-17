@@ -8,6 +8,7 @@ import { Screen5Problems } from "./components/Screens/Screen5Problems";
 import { Screen6Score } from "./components/Screens/Screen6Score";
 import { Screen7Status } from "./components/Screens/Screen7Status";
 import { Screen8QR } from "./components/Screens/Screen8QR";
+import { Screen9Done } from "./components/Screens/Screen9Done";
 import { HindiFrames } from "./components/HindiFrames";
 import { ComponentShowcase } from "./components/ComponentShowcase";
 import { Icon } from "./components/Icons";
@@ -52,7 +53,9 @@ export function App() {
   const [viewMode, setViewMode] = useState<"prototype" | "hindi-comparison" | "components">("prototype");
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-  const currentIndex = Math.max(0, PATHS.indexOf(pathname as (typeof PATHS)[number]));
+  // /done is the final screen after the 8 steps
+  const rawIndex = PATHS.indexOf(pathname as (typeof PATHS)[number]);
+  const currentIndex = rawIndex === -1 ? (pathname === "/done" ? PATHS.length - 1 : 0) : rawIndex;
   const goTo = (i: number) => navigate(PATHS[Math.max(0, Math.min(PATHS.length - 1, i))]);
   const goToNext = () => goTo(currentIndex + 1);
   const goToBack = () => goTo(currentIndex - 1);
@@ -78,8 +81,9 @@ export function App() {
       <Route path="/camera" element={<Screen4Camera {...common} />} />
       <Route path="/problems" element={<Screen5Problems {...common} />} />
       <Route path="/readiness" element={<Screen6Score {...common} />} />
-      <Route path="/status" element={<Screen7Status {...common} isHindi={lang === "hi"} />} />
+      <Route path="/status" element={<Screen7Status {...common} />} />
       <Route path="/qr" element={<Screen8QR onRestart={handleRestart} onBack={goToBack} onOpenHelp={handleOpenHelp} />} />
+      <Route path="/done" element={<Screen9Done onRestart={handleRestart} onOpenHelp={handleOpenHelp} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

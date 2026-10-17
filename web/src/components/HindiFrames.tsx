@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Screen3VoiceStatic as Screen3Voice } from "./Screens/Screen3VoiceStatic";
-import { Screen7Status } from "./Screens/Screen7Status";
+import { Screen7StatusStatic as Screen7Status } from "./Screens/Screen7StatusStatic";
 import { Icon } from "./Icons";
 
 export function HindiFrames({

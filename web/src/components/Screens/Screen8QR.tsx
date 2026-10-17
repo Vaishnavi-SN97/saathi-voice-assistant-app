@@ -1,246 +1,171 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import QRCode from "qrcode";
 import { Icon } from "../Icons";
-import {
-  PrimaryButton,
-  SecondaryButton,
-  ProgressDots,
-  BottomHelpBar,
-} from "../UIComponents";
-import { speakText } from "../../utils/speech";
+import { PrimaryButton, SecondaryButton, ProgressDots, WarningBanner, BottomHelpBar } from "../UIComponents";
+import { useI18n, type Key } from "../../lib/i18n";
+import { BRANCH, fmtDateTime, shortId, useApplication, type LiveError } from "../../lib/application";
+import { useOnline } from "../../lib/online";
+import { useSession } from "../../lib/session";
+import { speakServer } from "../../lib/speak";
 
-export function Screen8QR({
-  onRestart,
-  onBack,
-  onOpenHelp,
-}: {
-  onRestart: () => void;
-  onBack: () => void;
-  onOpenHelp: () => void;
-}) {
+const LIVE_ERROR: Record<LiveError, Key> = {
+  not_configured: "notConfigured",
+  permission: "livePermission",
+  network: "liveNetwork",
+  missing: "liveMissing",
+};
+
+export function Screen8QR({ onRestart, onBack, onOpenHelp }: { onRestart: () => void; onBack: () => void; onOpenHelp: () => void }) {
+  const { t, lang } = useI18n();
+  const { appId, appLang } = useSession();
+  const msgLang = appLang ?? lang;
+  const online = useOnline();
+  const { app, error, loading, retry } = useApplication(appId);
+
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [addedToPhone, setAddedToPhone] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  const handleCopyCode = () => {
-    navigator.clipboard?.writeText("SAA-2026-0417");
+  // The real QR: the approved application's signed token, drawn in the browser.
+  const token = app?.status === "approved" ? app.qr?.token : undefined;
+  useEffect(() => {
+    if (!token) return setQrUrl(null);
+    let cancelled = false;
+    QRCode.toDataURL(token, { width: 480, margin: 2, errorCorrectionLevel: "M", color: { dark: "#0b3f45", light: "#ffffff" } })
+      .then((u) => !cancelled && setQrUrl(u))
+      .catch(() => !cancelled && setQrUrl(null));
+    return () => { cancelled = true; };
+  }, [token]);
+
+  if (!appId) return <Navigate to="/" replace />;
+
+  const number = shortId(appId);
+  const status = app?.status;
+
+  const handleCopy = () => {
+    void navigator.clipboard?.writeText(number);
     setCopied(true);
-    speakText("Application number copied.", "en-IN");
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleAddToPhone = () => {
-    setAddedToPhone(true);
-    speakText("Fast counter QR pass saved to your phone photos.", "en-IN");
-  };
-
-  const handleCallBranch = () => {
-    speakText("Connecting you to Udupi main branch manager.", "en-IN");
-    window.location.href = "tel:+918202520111";
+  const handleSave = () => {
+    if (!qrUrl) return;
+    const a = document.createElement("a");
+    a.href = qrUrl;
+    a.download = `saathi-${number}.png`;
+    a.click();
+    setSaved(true);
   };
 
   return (
     <div className="screen-container qr-screen-wrapper">
-      {/* Top Progress indicator (Step 4: Sign) */}
       <ProgressDots activeStep={3} />
 
-      {/* Top action bar with back button */}
       <div className="top-action-bar">
-        <button
-          type="button"
-          onClick={onBack}
-          className="nav-back-btn"
-          aria-label="Go back"
-        >
+        <button type="button" onClick={onBack} className="nav-back-btn" aria-label={t("back")}>
           <Icon name="chevron" size={24} className="rotate-180" />
-          <span>Back</span>
+          <span>{t("back")}</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() =>
-            speakText(
-              "Show this at the fast counter. Application number SAA-2026-0417. No waiting in the general queue. Please carry your original Aadhaar, original PAN, and passbook.",
-              "en-IN"
-            )
-          }
-          className="listen-pill-btn"
-          aria-label="Listen aloud"
-        >
+        <button type="button" onClick={() => void speakServer(t("qrSpeech"), msgLang)} className="listen-pill-btn" aria-label={t("listen")}>
           <Icon name="speaker" size={22} />
-          <span>Listen</span>
+          <span>{t("listen")}</span>
         </button>
       </div>
 
-      {/* Screen Heading */}
       <div className="page-heading-block">
-        <span className="section-eyebrow">Priority Fast Counter</span>
-        <h1 className="screen-main-heading">Show this at the fast counter</h1>
+        <span className="section-eyebrow">{t("qrEyebrow")}</span>
+        <h1 className="screen-main-heading">{status && status !== "approved" ? (status === "signed" ? t("headSigned") : t("qrWaitTitle")) : t("qrTitle")}</h1>
       </div>
 
-      {/* Huge QR Code in White Card with Teal Border */}
-      <div className="huge-qr-card-container">
-        <div className="qr-svg-holder">
-          {/* Authentic High-Contrast Vector QR Code Pattern */}
-          <svg
-            className="qr-matrix-svg"
-            viewBox="0 0 200 200"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-label="QR Code for Application SAA-2026-0417"
-          >
-            {/* Background */}
-            <rect width="200" height="200" fill="#FFFFFF" rx="12" />
-
-            {/* Position Detection Patterns (Top-Left, Top-Right, Bottom-Left) */}
-            {/* Top-Left */}
-            <rect x="16" y="16" width="48" height="48" rx="6" fill="#0E7C86" />
-            <rect x="24" y="24" width="32" height="32" rx="4" fill="#FFFFFF" />
-            <rect x="32" y="32" width="16" height="16" rx="3" fill="#0E7C86" />
-
-            {/* Top-Right */}
-            <rect x="136" y="16" width="48" height="48" rx="6" fill="#0E7C86" />
-            <rect x="144" y="24" width="32" height="32" rx="4" fill="#FFFFFF" />
-            <rect x="152" y="32" width="16" height="16" rx="3" fill="#0E7C86" />
-
-            {/* Bottom-Left */}
-            <rect x="16" y="136" width="48" height="48" rx="6" fill="#0E7C86" />
-            <rect x="24" y="144" width="32" height="32" rx="4" fill="#FFFFFF" />
-            <rect x="32" y="152" width="16" height="16" rx="3" fill="#0E7C86" />
-
-            {/* Timing Patterns & Data Matrix Bits */}
-            <path
-              d="M72 24h8v8h-8zM88 24h8v8h-8zM104 24h8v8h-8zM120 24h8v8h-8zM72 40h8v8h-8zM104 40h8v8h-8zM72 56h8v8h-8zM88 56h8v8h-8zM120 56h8v8h-8z"
-              fill="#1F3A5F"
-            />
-            <path
-              d="M24 72h8v8h-8zM40 72h8v8h-8zM56 72h8v8h-8zM72 72h8v8h-8zM88 72h8v8h-8zM104 72h8v8h-8zM120 72h8v8h-8zM144 72h8v8h-8zM168 72h8v8h-8z"
-              fill="#1F3A5F"
-            />
-            <path
-              d="M24 88h8v8h-8zM48 88h8v8h-8zM72 88h8v8h-8zM120 88h8v8h-8zM152 88h8v8h-8zM168 88h8v8h-8z"
-              fill="#0E7C86"
-            />
-            <path
-              d="M24 104h8v8h-8zM56 104h8v8h-8zM88 104h8v8h-8zM104 104h8v8h-8zM136 104h8v8h-8zM168 104h8v8h-8z"
-              fill="#1F3A5F"
-            />
-            <path
-              d="M72 120h8v8h-8zM88 120h8v8h-8zM120 120h8v8h-8zM144 120h8v8h-8z"
-              fill="#0E7C86"
-            />
-            <path
-              d="M72 136h8v8h-8zM104 136h8v8h-8zM120 136h8v8h-8zM152 136h8v8h-8zM168 136h8v8h-8z"
-              fill="#1F3A5F"
-            />
-            <path
-              d="M88 152h8v8h-8zM104 152h8v8h-8zM136 152h8v8h-8zM160 152h8v8h-8z"
-              fill="#1F3A5F"
-            />
-            <path
-              d="M72 168h8v8h-8zM88 168h8v8h-8zM120 168h8v8h-8zM144 168h8v8h-8zM168 168h8v8h-8z"
-              fill="#0E7C86"
-            />
-
-            {/* Center Brand Badge (Saathi Emblem) */}
-            <circle cx="100" cy="100" r="20" fill="#FFFFFF" />
-            <circle cx="100" cy="100" r="16" fill="#0E7C86" />
-            <text
-              x="100"
-              y="105"
-              fill="#FFFFFF"
-              fontSize="14"
-              fontWeight="bold"
-              textAnchor="middle"
-              dominantBaseline="middle"
-            >
-              स
-            </text>
-          </svg>
+      {!online && <WarningBanner message={t("offline")} icon="alert" variant="amber" />}
+      {error && (
+        <div className="api-error-box" role="alert">
+          <WarningBanner message={t(LIVE_ERROR[error])} icon="alert" variant="amber" />
+          {error !== "not_configured" && error !== "missing" && (
+            <button type="button" className="retry-link-btn" onClick={retry}>{t("tryAgain")}</button>
+          )}
         </div>
+      )}
+      {loading && !error && (
+        <div className="screen-loading" role="status">
+          <span className="camera-spinner dark" aria-hidden="true" />
+        </div>
+      )}
 
-        {/* Application Number with Copy Action */}
-        <div className="application-number-strip">
-          <span className="app-id-label">Application number</span>
-          <div className="app-id-row">
-            <strong className="app-id-text">SAA-2026-0417</strong>
-            <button
-              type="button"
-              onClick={handleCopyCode}
-              className="copy-chip-btn"
-              aria-label="Copy application number"
-            >
-              <Icon name={copied ? "check" : "copy"} size={16} />
-              <span>{copied ? "Copied" : "Copy"}</span>
-            </button>
+      {/* Waiting / used states */}
+      {app && status !== "approved" && (
+        <div className="qr-not-ready" aria-live="polite">
+          <Icon name={status === "signed" ? "check" : "lock"} size={40} />
+          <p>{status === "signed" ? t("qrUsed") : t("qrWaitBody")}</p>
+        </div>
+      )}
+
+      {/* The real QR for the approved application */}
+      {app && status === "approved" && (
+        <div className="huge-qr-card-container">
+          <div className="qr-svg-holder">
+            {qrUrl ? (
+              <img className="qr-matrix-svg" src={qrUrl} alt={`QR ${number}`} width={240} height={240} />
+            ) : (
+              <span className="camera-spinner dark" aria-hidden="true" />
+            )}
+          </div>
+
+          <div className="application-number-strip">
+            <span className="app-id-label">{t("appNumber")}</span>
+            <div className="app-id-row">
+              <strong className="app-id-text">{number}</strong>
+              <button type="button" onClick={handleCopy} className="copy-chip-btn" aria-label={t("copy")}>
+                <Icon name={copied ? "check" : "copy"} size={16} />
+                <span>{copied ? t("copied") : t("copy")}</span>
+              </button>
+            </div>
+            {app.qr?.expiresAt && <span className="qr-valid-until">{t("validUntil", { date: fmtDateTime(app.qr.expiresAt, lang) })}</span>}
+          </div>
+
+          <div className="fast-queue-badge">
+            <Icon name="check" size={20} />
+            <strong>{t("noQueue")}</strong>
           </div>
         </div>
+      )}
 
-        {/* Reassuring Line: No waiting in the general queue */}
-        <div className="fast-queue-badge">
-          <Icon name="check" size={20} />
-          <strong>No waiting in the general queue.</strong>
-        </div>
-      </div>
-
-      {/* List of What to Carry Card */}
+      {/* What to carry */}
       <div className="what-to-carry-card">
-        <h3 className="carry-title">Please carry to the branch:</h3>
+        <h3 className="carry-title">{t("carryTitle")}</h3>
         <div className="carry-items-list">
-          <div className="carry-row">
-            <div className="carry-icon-box">
-              <Icon name="document" size={20} />
+          {(["carryAadhaar", "carryPan", "carryPassbook"] as const).map((k) => (
+            <div className="carry-row" key={k}>
+              <div className="carry-icon-box">
+                <Icon name="document" size={20} />
+              </div>
+              <span className="carry-text">{t(k)}</span>
             </div>
-            <span className="carry-text">
-              <strong>Original Aadhaar</strong> card
-            </span>
-          </div>
-          <div className="carry-row">
-            <div className="carry-icon-box">
-              <Icon name="document" size={20} />
-            </div>
-            <span className="carry-text">
-              <strong>Original PAN</strong> card
-            </span>
-          </div>
-          <div className="carry-row">
-            <div className="carry-icon-box">
-              <Icon name="document" size={20} />
-            </div>
-            <span className="carry-text">
-              <strong>Bank Passbook</strong> (original)
-            </span>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Action Buttons: Add to my phone (Primary) + Call the branch (Secondary) */}
       <div className="screen-bottom-action">
-        <PrimaryButton
-          onClick={handleAddToPhone}
-          icon={addedToPhone ? "check" : "arrow"}
-        >
-          {addedToPhone ? "Saved to Phone ✓" : "Add to my phone"}
-        </PrimaryButton>
+        {status === "approved" && (
+          <PrimaryButton onClick={handleSave} icon={saved ? "check" : "arrow"} disabled={!qrUrl}>
+            {saved ? t("saved") : t("saveQr")}
+          </PrimaryButton>
+        )}
 
-        <SecondaryButton
-          onClick={handleCallBranch}
-          icon="phone"
-          variant="outline"
-          className="mt-3"
-        >
-          Call the branch (0820-2520111)
-        </SecondaryButton>
+        <a href={`tel:${BRANCH.phoneTel}`} className="qr-call-link">
+          <SecondaryButton icon="phone" variant="outline" className="mt-3">
+            {t("callBranch", { phone: BRANCH.phoneDisplay })}
+          </SecondaryButton>
+        </a>
 
-        <button
-          type="button"
-          onClick={onRestart}
-          className="restart-flow-text-btn"
-        >
-          Start new form / Restart flow
+        <button type="button" onClick={onRestart} className="restart-flow-text-btn">
+          {t("restart")}
         </button>
       </div>
 
-      {/* Bottom Help Link */}
-      <BottomHelpBar onHelpClick={onOpenHelp} />
+      <BottomHelpBar onHelpClick={onOpenHelp} label={t("help")} />
     </div>
   );
 }

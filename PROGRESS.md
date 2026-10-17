@@ -37,6 +37,18 @@
 
 - [x] P8 web: document camera, problems, readiness screens (+ server /resolve-name)
 
+- [x] P9 web: live status screen (Firestore onSnapshot), real QR screen, done screen, `npm run decide` to act as the bank
+
+## P9 decisions
+- Status screen reads ONLY the live application document (Firestore onSnapshot via `useApplication`); the timeline, headline card and buttons follow `status` + `metrics`. sent_back shows the bank's translated note and a "Fix and send again" button; approved leads to the QR screen; signed leads to the new /done screen.
+- Firestore rules (`firestore.rules`: owner or banker may read an application, nobody writes from the client) must be DEPLOYED for the live listener to work: `npx firebase-tools login` then `npx firebase-tools deploy --only firestore:rules` from the repo root (no Firebase CLI is installed here) (`firebase.json` + `.firebaserc` for project saathi-f5b30 added). Until then the screen shows "Live updates are blocked by the database rules". I did not deploy anything.
+- Notify-consent toggle: new `POST /applications/:id/notify-consent {consent}` (owner only, audited); WhatsApp messages stop/resume accordingly. It replaced the design's "family share" toggle (not in SPEC).
+- QR screen draws the real QR in the browser (`qrcode`) from `application.qr.token` when status is approved; "Save QR to my phone" downloads the PNG. Before approval it says the QR is not ready; after signing it says the QR was used.
+- Branch card: still the placeholder from the design (Manipal Co-operative Bank, Udupi Main Branch, 0820-2520111) in `web/src/lib/application.ts` (BRANCH). P12 seeds the real branch. Application number shown is `SAA-` + first 6 characters of the id.
+- Server: banker actions refactored into `approveApplication / sendBackApplication / signApplication` (used by /review and /sign) and `createCtx`; `npm run decide -- <appId> approve|send_back "note"|sign|show` (server/scripts/decide.ts) acts as the bank on the real Firestore.
+- Static previews of screens 3 and 7 are kept (Screen3VoiceStatic / Screen7StatusStatic) for the Hindi comparison frame.
+- Every screen has the "Help / talk to a person" link.
+
 ## P8 decisions
 - Camera: rear camera with guide frame, on-phone blur check (Laplacian variance on a 640 px canvas), preview with Use / Retake, upload to /documents/extract, then /check and the problems screen. "Choose a photo" works with or without a camera (gallery/file picker). Camera denied / unsupported / offline all have messages; every call has loading + retry.
 - Blur is never a hard block: a blurry-looking photo shows the warning with "Retake" and "Use this photo anyway" (it is still uploaded and extracted; readiness reflects it, and the server's PHOTO_BLURRY still blocks the final send until it is retaken, per SPEC). A server-side issue after upload shows the same choice: Retake or Keep and continue.
@@ -82,6 +94,7 @@
 - `server/src/services/interview-engine.ts`: read-back sentences, "didn't catch that", "say yes or no", "let's type it", Yes/No words.
 - `server/src/services/scam-shield.ts`: scam warning (hi, kn). SPEC's English wording is exact; the translations are mine.
 - `server/src/services/mismatches.ts` (all 8 messages + document names आधार/पैन कार्ड/पासबुक, ಆಧಾರ್/ಪ್ಯಾನ್ ಕಾರ್ಡ್/ಪಾಸ್‌ಬುಕ್) and `readiness.ts` (to-dos), hi + kn.
+- `web/src/lib/i18n.tsx` P9 additions: timeline steps, status headlines, WhatsApp toggle, QR screen, done screen, live-update errors (hi, kn).
 - `web/src/lib/i18n.tsx`: all UI strings (hi, kn): language / consent / interview / help texts, error messages, and the P8 camera / problems / readiness texts (problem titles, spelling choices, checklist labels, "Use this photo anyway").
 - `server/src/services/notify.ts`: all 5 WhatsApp messages (hi, kn).
 - `server/src/services/gemini.ts`: none (prompts are English). Demo docs are English only.

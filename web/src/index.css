@@ -3428,3 +3428,27 @@ body {
 }
 .todo-list-card strong { display: block; margin-bottom: 6px; font-size: 17px; }
 .todo-list-card ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; line-height: 1.4; }
+
+/* ==========================================================================
+   P9: status, QR and done screens
+   ========================================================================== */
+.step-attention .timeline-node-marker { background: var(--warning-amber); color: #fff; border-color: transparent; }
+.step-attention .timeline-node-title { color: var(--warning-amber); }
+.prominent-preapproved-card.card-attention { border-left: 6px solid var(--warning-amber); }
+.family-toggle-switch:disabled { opacity: 0.6; cursor: default; }
+
+.qr-not-ready {
+  display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 28px 20px;
+  border-radius: 24px; background: var(--neu-bg); border: var(--neu-bevel-light); box-shadow: var(--shadow-neu-raised);
+  color: var(--navy-muted); font-size: 18px; line-height: 1.45;
+}
+.qr-not-ready p { margin: 0; }
+.qr-valid-until { display: block; margin-top: 6px; font-size: 14px; font-weight: 700; color: var(--navy-muted); }
+.qr-svg-holder .qr-matrix-svg { width: min(240px, 70vw); height: auto; display: block; border-radius: 12px; }
+.qr-call-link { display: block; text-decoration: none; }
+
+.done-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding: 24px 8px; }
+.done-check-circle {
+  width: 112px; height: 112px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--success-green); color: #fff; box-shadow: var(--shadow-neu-raised-lg);
+}
