@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import type { Ctx } from "../app.js";
 import { audit } from "../audit.js";
+import { DEFAULT_BRANCH } from "../branch.js";
 import { CODES, form, toLang } from "../form.js";
 import { fieldOut } from "../services/interview-engine.js";
 
@@ -30,6 +31,7 @@ export const applicationsRouter = (ctx: Ctx) =>
         notify: { phone: null, consent: false },
         metrics: { startedAt: now, scamBlocks: 0, mistakesCaught: 0 },
         interview: { attempts: 0 },
+        branchId: DEFAULT_BRANCH.id,
         createdAt: now,
         updatedAt: now,
       });

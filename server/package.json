@@ -13,7 +13,12 @@
     "docs": "tsx scripts/run-documents.ts",
     "journey": "tsx scripts/run-journey.ts",
     "decide": "tsx scripts/decide.ts",
-    "purge-tts": "tsx scripts/purge-tts.ts"
+    "purge-tts": "tsx scripts/purge-tts.ts",
+    "seed": "tsx scripts/seed.ts",
+    "retention": "tsx scripts/retention.ts",
+    "journey:remote": "tsx scripts/journey-remote.ts",
+    "secret-scan": "node scripts/secret-scan.mjs",
+    "prod-env": "node scripts/prod-env.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",
@@ -32,7 +37,9 @@
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "sharp": "^0.35.5",
+    "tsx": "^4.23.15",
     "twilio": "^6.2.0",
+    "typescript": "^7.0.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -42,8 +49,9 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.3.0",
     "@types/node": "^26.6.5",
-    "@types/qrcode": "^1.5.6",
-    "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "@types/qrcode": "^1.5.6"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

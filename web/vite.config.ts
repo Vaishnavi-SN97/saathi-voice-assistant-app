@@ -1,9 +1,18 @@
 import { defineConfig, type HtmlTagDescriptor, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
-import siteConfiguration from '../.figma/make/site.json'
+// Figma Make keeps the page metadata one folder up. Read it if it is there; a standalone build (Vercel with the web/ folder as root) falls back to the same defaults.
+const siteFile = path.resolve(__dirname, '../.figma/make/site.json')
+const siteConfiguration = existsSync(siteFile)
+  ? JSON.parse(readFileSync(siteFile, 'utf8'))
+  : {
+      description: 'A voice-first assistant that helps senior citizens in India fill bank forms in their native languages.',
+      robots: { index: false },
+      accessibility: { addBypassLinks: false, ignoreReducedMotion: false },
+    }
 
 
 // Vite config — https://vitejs.dev/config/

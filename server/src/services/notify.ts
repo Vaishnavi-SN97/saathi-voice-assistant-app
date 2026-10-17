@@ -72,6 +72,8 @@ export class Notifier {
       return { sent: false, reason };
     };
     if (this.env.NOTIFY_MODE === "off") return skip("mode_off");
+    // Seeded demo rows carry made-up phone numbers: never message them.
+    if (app.demo === true) return skip("demo_data");
     if (app.notify?.consent !== true) return skip("no_consent");
     const phone = String(app.notify?.phone ?? "");
     if (!/^[6-9]\d{9}$/.test(phone)) return skip("no_phone");

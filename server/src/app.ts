@@ -56,7 +56,7 @@ export function createApp(deps: Deps) {
   app.use(cors({ origin: env.CORS_ORIGINS.split(",").map((s) => s.trim()).filter(Boolean) }));
   app.use(express.json({ limit: env.JSON_LIMIT }));
 
-  app.get("/health", (_req, res) => void res.json({ ok: true }));
+  app.get("/health", (_req, res) => void res.json({ ok: true, mockAi: env.MOCK_AI }));
   app.use("/media", mediaRouter(ctx));
   const auth = requireAuth(verifier);
   app.use("/files", auth, filesRouter(ctx));

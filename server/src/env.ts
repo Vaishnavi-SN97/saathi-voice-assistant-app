@@ -23,6 +23,9 @@ const schema = z.object({
   MOCK_AI: bool("false"),
   QR_JWT_SECRET: z.string().default("dev-only-secret-change-me"),
   BASELINE_MANUAL_MINUTES: z.coerce.number().default(30),
+  /** Retention: days an unfinished application may sit idle before it is deleted. RETENTION=off disables the scheduled cleanup. */
+  RETENTION_DAYS: z.coerce.number().default(7),
+  RETENTION: z.enum(["on", "off"]).default("on"),
 });
 
 export type Env = z.infer<typeof schema>;

@@ -12,6 +12,7 @@ service cloud.firestore {
       // Audit trail: bankers only (customers never read it; all writes go through the API).
       match /audit/{auditId} { allow read: if isBanker(); allow write: if false; }
     }
+    match /branches/{id} { allow read: if request.auth != null; allow write: if false; }
     match /audit/{id} { allow read, write: if false; }
     match /media/{id} { allow read, write: if false; }
     match /{other=**} { allow read, write: if false; }
