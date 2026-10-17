@@ -93,9 +93,9 @@ export class Notifier {
     // texting a stranger. Real applications always go to the number the customer gave (the form asks for an Indian mobile).
     const to = app.demo === true ? toE164(this.env.DEMO_WHATSAPP_TO) : indianMobile(app.notify?.phone);
     if (!to) return skip(app.demo === true ? (this.env.DEMO_WHATSAPP_TO ? "demo_number_invalid" : "demo_data") : "no_phone");
-    const sender = `whatsapp:${this.env.TWILIO_WHATSAPP_FROM!.replace(/^whatsapp:/, "")}`;
+    if (!this.send) return skip("no_credentials"); // checked before the sender is read: it may not be configured at all
+    const sender = `whatsapp:${String(this.env.TWILIO_WHATSAPP_FROM ?? "").replace(/^whatsapp:/, "")}`;
     if (`whatsapp:${to}` === sender) return skip("to_equals_sender"); // the sandbox number cannot message itself
-    if (!this.send) return skip("no_credentials");
 
     const lang = toLang(app.language) ?? "en";
     // Twilio downloads the voice note / QR image itself, so PUBLIC_API_URL must be reachable from the internet.
