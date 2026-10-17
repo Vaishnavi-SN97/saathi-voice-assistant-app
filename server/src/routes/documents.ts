@@ -6,7 +6,7 @@ import { audit } from "../audit.js";
 import type { AuthUser } from "../auth.js";
 import { AppError } from "../errors.js";
 import { compressImage } from "../fileStore.js";
-import { isBlurry } from "../services/image-quality.js";
+import { BLUR_THRESHOLD, laplacianVariance } from "../services/image-quality.js";
 import { normalizeDob } from "../services/matcher.js";
 import { evaluate } from "../services/evaluate.js";
 import { DOC_KINDS, makeMismatch, type Mismatch } from "../services/mismatches.js";
@@ -45,7 +45,8 @@ export const documentsRouter = (ctx: Ctx) =>
       catch (e) { throw e instanceof AppError ? e : new AppError(415, "bad_image", "Could not read the image"); }
 
       const ex = await ctx.extract.extractDoc(kind, jpeg, "image/jpeg");
-      const blurry = ex.blurry || (await isBlurry(jpeg));
+      const blurScore = await laplacianVariance(jpeg);
+      const blurry = ex.blurry || blurScore < BLUR_THRESHOLD;
 
       // Validate; the full Aadhaar number is reduced to last 4 + valid and dropped here.
       const valid =
@@ -73,44 +74,72 @@ export const documentsRouter = (ctx: Ctx) =>
       const issues: Mismatch[] = [];
       if (blurry) issues.push(makeMismatch("PHOTO_BLURRY", kind));
       else if (!valid) issues.push(makeMismatch(kind === "aadhaar" ? "AADHAAR_INVALID" : kind === "pan" ? "PAN_INVALID" : "IFSC_INVALID", kind));
-      res.json({ kind, ...doc, issues });
+      res.json({ kind, ...doc, issues, blurScore: Math.round(blurScore * 10) / 10, blurThreshold: BLUR_THRESHOLD });
     } catch (e) { next(e); }
   });
 
-/** POST /applications/:id/check - run matcher + validators, store mismatches + readiness, update status. */
+/** Runs matcher + validators, stores mismatches + readiness, updates status. Shared by /check and /resolve-name. */
+async function runCheck(ctx: Ctx, user: AuthUser, appId: string, app: Record<string, any>) {
+  const { mismatches, readiness, blocking, eligible } = evaluate(app);
+
+  // Count each (code, document) problem once, the first time it is caught.
+  const key = (m: { code: string; doc?: string }) => `${m.code}:${m.doc ?? ""}`;
+  const seen = new Set<string>((app.mismatches ?? []).map(key));
+  const fresh = mismatches.filter((m) => !seen.has(key(m))).length;
+
+  let status = app.status as string;
+  // SPEC: sent_back -> needs_fix once the customer starts fixing (a check run is that signal).
+  if (status === "sent_back") { assertTransition("sent_back", "needs_fix"); status = "needs_fix"; }
+  if (blocking && status === "docs_pending") { assertTransition("docs_pending", "needs_fix"); status = "needs_fix"; }
+  // No blocking problem: status stays; the application is now eligible for POST /submit (-> ready_for_review).
+
+  await ctx.store.set(`applications/${appId}`, {
+    ...app,
+    status,
+    mismatches,
+    readiness: { score: readiness.score, items: readiness.items, quickApprove: readiness.quickApprove, eligible },
+    metrics: { ...(app.metrics ?? {}), mistakesCaught: (app.metrics?.mistakesCaught ?? 0) + fresh },
+    updatedAt: new Date().toISOString(),
+  });
+  await audit(ctx.store, user, "application.check", appId, { codes: mismatches.map((m) => m.code), score: readiness.score, eligible });
+  if (status !== app.status) {
+    await audit(ctx.store, user, `status.${status}`, appId, { from: app.status });
+    if (status === "needs_fix" && app.status === "docs_pending") await ctx.notifier.notify(appId, { ...app, status }, "needs_fix");
+  }
+  return { status, eligible, mismatches, readiness: { score: readiness.score, quickApprove: readiness.quickApprove, items: readiness.items } };
+}
+
+const resolveBody = z.object({ use: z.enum(["answers", ...DOC_KINDS]) });
+
 export const checkRouter = (ctx: Ctx) =>
-  Router().post("/:id/check", async (req, res, next) => {
-    try {
-      const appId = String(req.params.id);
-      const app = await loadOwnApp(ctx, req.user!, appId);
+  Router()
+    /** POST /applications/:id/check */
+    .post("/:id/check", async (req, res, next) => {
+      try {
+        const appId = String(req.params.id);
+        const app = await loadOwnApp(ctx, req.user!, appId);
+        res.json(await runCheck(ctx, req.user!, appId, app));
+      } catch (e) { next(e); }
+    })
 
-      const { mismatches, readiness, blocking, eligible } = evaluate(app);
-
-      // Count each (code, document) problem once, the first time it is caught.
-      const key = (m: { code: string; doc?: string }) => `${m.code}:${m.doc ?? ""}`;
-      const seen = new Set<string>((app.mismatches ?? []).map(key));
-      const fresh = mismatches.filter((m) => !seen.has(key(m))).length;
-
-      let status = app.status as string;
-      // SPEC: sent_back -> needs_fix once the customer starts fixing (a check run is that signal).
-      if (status === "sent_back") { assertTransition("sent_back", "needs_fix"); status = "needs_fix"; }
-      if (blocking && status === "docs_pending") { assertTransition("docs_pending", "needs_fix"); status = "needs_fix"; }
-      // No blocking problem: status stays; the application is now eligible for POST /submit (-> ready_for_review).
-
-      await ctx.store.set(`applications/${appId}`, {
-        ...app,
-        status,
-        mismatches,
-        readiness: { score: readiness.score, items: readiness.items, quickApprove: readiness.quickApprove, eligible },
-        metrics: { ...(app.metrics ?? {}), mistakesCaught: (app.metrics?.mistakesCaught ?? 0) + fresh },
-        updatedAt: new Date().toISOString(),
-      });
-      await audit(ctx.store, req.user!, "application.check", appId, { codes: mismatches.map((m) => m.code), score: readiness.score, eligible });
-      if (status !== app.status) {
-        await audit(ctx.store, req.user!, `status.${status}`, appId, { from: app.status });
-        if (status === "needs_fix" && app.status === "docs_pending") await ctx.notifier.notify(appId, { ...app, status }, "needs_fix");
-      }
-
-      res.json({ status, eligible, mismatches, readiness: { score: readiness.score, quickApprove: readiness.quickApprove, items: readiness.items } });
-    } catch (e) { next(e); }
-  });
+    /**
+     * POST /applications/:id/resolve-name {use}: the customer picks the correct spelling when their name is
+     * spelled two ways ("answers" keeps what they said, or a document's spelling). Sets the form name, records the
+     * choice (which silences the warning-level NAME_SPELLED_DIFFERENTLY) and re-runs the check.
+     */
+    .post("/:id/resolve-name", async (req, res, next) => {
+      try {
+        const appId = String(req.params.id);
+        const { use } = resolveBody.parse(req.body);
+        const app = await loadOwnApp(ctx, req.user!, appId);
+        let answers = app.answers ?? {};
+        if (use !== "answers") {
+          const name = app.documents?.[use]?.fields?.name;
+          if (typeof name !== "string" || !name.trim()) throw new AppError(409, "no_name", "That document has no readable name");
+          answers = { ...answers, full_name: { value: name, valueEn: name, confidence: 1, confirmed: true, source: use } };
+        }
+        const next = { ...app, answers, nameResolved: { use, at: new Date().toISOString() } };
+        await audit(ctx.store, req.user!, "name.resolve", appId, { use });
+        res.json(await runCheck(ctx, req.user!, appId, next));
+      } catch (e) { next(e); }
+    });

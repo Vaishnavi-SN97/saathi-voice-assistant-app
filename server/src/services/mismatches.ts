@@ -7,7 +7,7 @@ export const MISMATCH_CODES = [
 export type MismatchCode = (typeof MISMATCH_CODES)[number];
 export type Severity = "warn" | "block";
 export type Msg = Record<Lang, string>;
-export interface Mismatch { code: MismatchCode; severity: Severity; message: Msg; doc?: DocKind }
+export interface Mismatch { code: MismatchCode; severity: Severity; message: Msg; doc?: DocKind; detail?: Record<string, string> }
 
 export const DOC_KINDS = ["aadhaar", "pan", "passbook"] as const;
 export type DocKind = (typeof DOC_KINDS)[number];
@@ -82,11 +82,12 @@ export function mismatchMessage(code: MismatchCode, doc?: DocKind): Msg {
   return out;
 }
 
-export const makeMismatch = (code: MismatchCode, doc?: DocKind): Mismatch => ({
+export const makeMismatch = (code: MismatchCode, doc?: DocKind, detail?: Record<string, string>): Mismatch => ({
   code,
   severity: SEVERITY[code],
   message: mismatchMessage(code, doc),
   ...(doc ? { doc } : {}),
+  ...(detail ? { detail } : {}),
 });
 
 /* ---------- from an application document ---------- */
@@ -95,6 +96,8 @@ export interface AppLike {
   answers?: Record<string, { value?: unknown; valueEn?: string | null; confirmed?: boolean } | undefined>;
   documents?: Partial<Record<DocKind, { fields?: Record<string, any>; valid?: boolean; blurry?: boolean } | undefined>>;
   consent?: { at?: string };
+  /** Set when the customer chose the correct spelling (POST /resolve-name): silences NAME_SPELLED_DIFFERENTLY. */
+  nameResolved?: unknown;
 }
 
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v : null);
@@ -125,9 +128,9 @@ const ORDER: Record<MismatchCode, number> = Object.fromEntries(MISMATCH_CODES.ma
 /** All mismatches for an application (deduplicated by code + document, blocking first). */
 export function buildMismatches(app: AppLike): Mismatch[] {
   const found = new Map<string, Mismatch>();
-  const add = (code: MismatchCode, doc?: DocKind) => {
+  const add = (code: MismatchCode, doc?: DocKind, detail?: Record<string, string>) => {
     const key = `${code}:${doc ?? ""}`;
-    if (!found.has(key)) found.set(key, makeMismatch(code, doc));
+    if (!found.has(key)) found.set(key, makeMismatch(code, doc, detail));
   };
 
   for (const k of DOC_KINDS) {
@@ -139,15 +142,18 @@ export function buildMismatches(app: AppLike): Mismatch[] {
 
   // What the customer told us is the reference: judge each document against it. Document-vs-document pairs only
   // count for an attribute (name / dob) the customer has not given, so blame lands on the right document.
-  const ans = sourcesFromApp(app).find((s) => s.id === "answers");
+  const sources = sourcesFromApp(app);
+  const ans = sources.find((s) => s.id === "answers");
+  const src = (id: SourceId) => sources.find((s) => s.id === id);
   for (const p of pairsForApp(app)) {
     const doc: SourceId = p.b;
     if (doc === "answers") continue;
     if (p.a === "answers" || !ans?.name) {
-      if (p.name?.verdict === "mismatch") add("NAME_MISMATCH", doc);
-      else if (p.name?.verdict === "spelled_differently") add("NAME_SPELLED_DIFFERENTLY", doc);
+      const names = { answerName: src(p.a)?.name ?? "", docName: src(doc)?.name ?? "" };
+      if (p.name?.verdict === "mismatch") add("NAME_MISMATCH", doc, names);
+      else if (p.name?.verdict === "spelled_differently" && !app.nameResolved) add("NAME_SPELLED_DIFFERENTLY", doc, names);
     }
-    if ((p.a === "answers" || !ans?.dob) && p.dob === "mismatch") add("DOB_MISMATCH", doc);
+    if ((p.a === "answers" || !ans?.dob) && p.dob === "mismatch") add("DOB_MISMATCH", doc, { answerDob: src(p.a)?.dob ?? "", docDob: src(doc)?.dob ?? "" });
   }
 
   for (const k of DOC_KINDS) if (found.has(`NAME_MISMATCH:${k}`)) found.delete(`NAME_SPELLED_DIFFERENTLY:${k}`);

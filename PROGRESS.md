@@ -35,6 +35,16 @@
 
 - [x] P7 web: Firebase anonymous auth, API client, i18n en/hi/kn, fonts, safe areas, router, language + consent + interview screens (screens 4-8 are still the static prototypes: P8/P9)
 
+- [x] P8 web: document camera, problems, readiness screens (+ server /resolve-name)
+
+## P8 decisions
+- Camera: rear camera with guide frame, on-phone blur check (Laplacian variance on a 640 px canvas), preview with Use / Retake, upload to /documents/extract, then /check and the problems screen. "Choose a photo" works with or without a camera (gallery/file picker). Camera denied / unsupported / offline all have messages; every call has loading + retry.
+- Blur is never a hard block: a blurry-looking photo shows the warning with "Retake" and "Use this photo anyway" (it is still uploaded and extracted; readiness reflects it, and the server's PHOTO_BLURRY still blocks the final send until it is retaken, per SPEC). A server-side issue after upload shows the same choice: Retake or Keep and continue.
+- Calibration: ONE constant, `BLUR_THRESHOLD` in `web/src/lib/blur.ts` (12). Open the camera screen with `?debug=1` to see each photo's measured value (and the server's value + threshold after upload). The server has its own constant in `server/src/services/image-quality.ts` (also 12): if you change one, change the other. Fake demo cards measure ~1500, a heavy blur ~3; real phone photos are unmeasured so far.
+- Problems screen: one card per server mismatch with a speaker button (server voice, browser fallback) and a direct action: name spelled two ways -> pick the spelling (POST /applications/:id/resolve-name {use: "answers"|doc}); every other problem -> Retake / Take that document (camera in single-document mode).
+- Server: /documents/extract also returns `blurScore` + `blurThreshold`; mismatches for names/DOB carry `detail` (both values); /resolve-name sets the form name, records `nameResolved` (silences only the warning-level NAME_SPELLED_DIFFERENTLY; a hard NAME_MISMATCH stays) and re-runs the check.
+- Readiness: score ring + checklist + to-dos straight from /check; "Send to bank officer" calls /submit; a 409 not_eligible shows "Fix problems" -> problems screen.
+
 ## P7 decisions
 - web/.env must hold VITE_API_URL and the 4 VITE_FIREBASE_* values (Firebase console > Project settings > Your apps > Web app). Without them every API call shows a "not set up" message instead of failing silently.
 - The web package.json had picked up all the server dependencies (a stray install during P0) and web/tsconfig.json had been overwritten with the server one: both restored (original Figma tsconfig; web deps are now only react, react-dom, react-router-dom, firebase and @fontsource/*).
@@ -72,7 +82,7 @@
 - `server/src/services/interview-engine.ts`: read-back sentences, "didn't catch that", "say yes or no", "let's type it", Yes/No words.
 - `server/src/services/scam-shield.ts`: scam warning (hi, kn). SPEC's English wording is exact; the translations are mine.
 - `server/src/services/mismatches.ts` (all 8 messages + document names आधार/पैन कार्ड/पासबुक, ಆಧಾರ್/ಪ್ಯಾನ್ ಕಾರ್ಡ್/ಪಾಸ್‌ಬುಕ್) and `readiness.ts` (to-dos), hi + kn.
-- `web/src/lib/i18n.tsx`: all UI strings (hi, kn): language / consent / interview / help texts and error messages.
+- `web/src/lib/i18n.tsx`: all UI strings (hi, kn): language / consent / interview / help texts, error messages, and the P8 camera / problems / readiness texts (problem titles, spelling choices, checklist labels, "Use this photo anyway").
 - `server/src/services/notify.ts`: all 5 WhatsApp messages (hi, kn).
 - `server/src/services/gemini.ts`: none (prompts are English). Demo docs are English only.
 - `server/src/services/yesno.ts`: hi/kn yes/no word lists (colloquial variants may be missing).

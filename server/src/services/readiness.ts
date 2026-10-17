@@ -73,7 +73,7 @@ export function computeReadiness(app: AppLike): Readiness {
   // 3. names match (15) and 4. DOB matches (10): need at least two sources to compare
   const pairs = pairsForApp(app);
   const namePairs = pairs.filter((p) => p.name);
-  const worst = namePairs.some((p) => p.name!.verdict === "mismatch") ? "mismatch" : namePairs.some((p) => p.name!.verdict === "spelled_differently") ? "spelled_differently" : "match";
+  const worst = namePairs.some((p) => p.name!.verdict === "mismatch") ? "mismatch" : namePairs.some((p) => p.name!.verdict === "spelled_differently") && !app.nameResolved ? "spelled_differently" : "match";
   const namesOk = namePairs.length > 0 && worst === "match";
   push("names", namePairs.length === 0 ? 0 : worst === "match" ? WEIGHTS.names : worst === "spelled_differently" ? WEIGHTS.names / 2 : 0, namesOk, namePairs.length ? TODO.names : undefined);
 

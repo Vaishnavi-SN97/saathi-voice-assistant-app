@@ -1,139 +1,167 @@
+import { useCallback, useEffect, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Icon } from "../Icons";
-import {
-  PrimaryButton,
-  ProgressDots,
-  ChecklistRow,
-  BottomHelpBar,
-} from "../UIComponents";
-import { speakText } from "../../utils/speech";
+import { PrimaryButton, ProgressDots, ChecklistRow, WarningBanner, BottomHelpBar } from "../UIComponents";
+import { useI18n, type Key } from "../../lib/i18n";
+import { api, ApiError } from "../../lib/api";
+import { useSession, type CheckResult } from "../../lib/session";
+import { speakServer } from "../../lib/speak";
 
-export function Screen6Score({
-  onNext,
-  onBack,
-  onOpenHelp,
-}: {
-  onNext: () => void;
-  onBack: () => void;
-  onOpenHelp: () => void;
-}) {
-  const checklistItems = [
-    { label: "Name matches", isComplete: true, badge: "✓ Verified" },
-    { label: "Date of birth matches", isComplete: true, badge: "✓ Verified" },
-    { label: "Aadhaar valid", isComplete: true, badge: "✓ Active" },
-    { label: "PAN valid", isComplete: true, badge: "✓ Linked" },
-    { label: "Passbook clear", isComplete: true, badge: "✓ Legible" },
-    {
-      label: "Nominee details",
-      isComplete: false,
-      badge: "1 left",
-    },
-  ];
+const CIRCUMFERENCE = 415; // 2 * PI * 66
 
-  const handleListenScore = () => {
-    speakText(
-      "Your readiness score is 92% ready. Name, Date of Birth, Aadhaar, PAN, and Passbook are verified. Only one nominee detail remains.",
-      "en-IN"
-    );
+export function Screen6Score({ onNext, onBack, onOpenHelp }: { onNext: () => void; onBack: () => void; onOpenHelp: () => void }) {
+  const { t, lang } = useI18n();
+  const session = useSession();
+  const navigate = useNavigate();
+  const { appId, appLang, check } = session;
+  const msgLang = appLang ?? lang;
+
+  const [loading, setLoading] = useState(!check);
+  const [sending, setSending] = useState(false);
+  const [notEligible, setNotEligible] = useState(false);
+  const [error, setError] = useState<{ text: string; retry: () => void } | null>(null);
+
+  const fail = (e: unknown, retry: () => void) => {
+    const status = e instanceof ApiError ? e.status : 0;
+    setError({ text: status === -1 ? t("notConfigured") : status === 0 ? (navigator.onLine ? t("netError") : t("offline")) : t("genericError"), retry });
+  };
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      session.setCheck(await api<CheckResult>(`/applications/${appId}/check`, { method: "POST", json: {} }));
+    } catch (e) {
+      fail(e, () => void load());
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appId]);
+  useEffect(() => { if (appId) void load(); }, [appId, load]);
+
+  const send = async () => {
+    setSending(true);
+    setError(null);
+    setNotEligible(false);
+    try {
+      await api(`/applications/${appId}/submit`, { json: {} });
+      onNext();
+    } catch (e) {
+      if (e instanceof ApiError && e.code === "not_eligible") {
+        setNotEligible(true);
+        void load(); // refresh the list of what is still wrong
+      } else {
+        fail(e, () => void send());
+      }
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (!appId) return <Navigate to="/" replace />;
+
+  const score = check?.readiness.score ?? 0;
+  const items = check?.readiness.items ?? [];
+  const todos = items.filter((i) => !i.done && i.todo);
+  const ready = (check?.eligible ?? false) && score >= 90;
+
+  const handleListen = () => {
+    const text = [t("scoreSpeech", { score }), ...todos.map((i) => i.todo![msgLang])].join(" ");
+    void speakServer(text, msgLang);
   };
 
   return (
     <div className="screen-container score-screen-wrapper">
-      {/* Top Progress indicator (Step 3: Review) */}
       <ProgressDots activeStep={2} />
 
-      {/* Top bar with back button & speaker */}
       <div className="top-action-bar">
-        <button
-          type="button"
-          onClick={onBack}
-          className="nav-back-btn"
-          aria-label="Go back"
-        >
+        <button type="button" onClick={onBack} className="nav-back-btn" aria-label={t("back")}>
           <Icon name="chevron" size={24} className="rotate-180" />
-          <span>Back</span>
+          <span>{t("back")}</span>
         </button>
 
-        <button
-          type="button"
-          onClick={handleListenScore}
-          className="listen-pill-btn"
-          aria-label="Listen to score overview"
-        >
+        <button type="button" onClick={handleListen} className="listen-pill-btn" aria-label={t("listen")} disabled={!check}>
           <Icon name="speaker" size={22} />
-          <span>Listen</span>
+          <span>{t("listen")}</span>
         </button>
       </div>
 
-      {/* Hero Circular Progress Ring (92% ready) */}
+      {/* Score ring from the API */}
       <div className="readiness-ring-hero">
         <div className="circular-progress-ring-box">
           <svg className="ring-svg-circle" viewBox="0 0 160 160" aria-hidden="true">
-            {/* Background ring */}
-            <circle
-              className="ring-bg-track"
-              cx="80"
-              cy="80"
-              r="66"
-              strokeWidth="14"
-            />
-            {/* Filled progress ring (92% of 2*PI*66 = ~414.7, offset = 414.7 * 0.08 = ~33) */}
+            <circle className="ring-bg-track" cx="80" cy="80" r="66" strokeWidth="14" />
             <circle
               className="ring-value-stroke"
               cx="80"
               cy="80"
               r="66"
               strokeWidth="14"
-              strokeDasharray="415"
-              strokeDashoffset="33"
+              strokeDasharray={CIRCUMFERENCE}
+              strokeDashoffset={CIRCUMFERENCE * (1 - score / 100)}
             />
           </svg>
 
-          {/* Center text: 92% ready */}
           <div className="ring-center-content">
-            <span className="ring-percentage-num">92%</span>
-            <span className="ring-ready-label">ready</span>
+            <span className="ring-percentage-num">{loading ? "…" : `${score}%`}</span>
+            <span className="ring-ready-label">{t("ready")}</span>
           </div>
 
-          {/* Green check badge at bottom corner */}
-          <div className="ring-green-check-badge">
-            <Icon name="check" size={24} />
-          </div>
+          {ready && (
+            <div className="ring-green-check-badge">
+              <Icon name="check" size={24} />
+            </div>
+          )}
         </div>
 
-        <h1 className="screen-main-heading score-main-heading">
-          Your form is almost ready
-        </h1>
-        <p className="screen-sub-description">
-          Saathi checked all your documents and spellings.
-        </p>
+        <h1 className="screen-main-heading score-main-heading">{ready ? t("readyHeadingDone") : t("readyHeadingAlmost")}</h1>
+        <p className="screen-sub-description">{t("readySub")}</p>
       </div>
 
-      {/* Checklist items */}
+      {error && (
+        <div className="api-error-box" role="alert">
+          <WarningBanner message={error.text} icon="alert" variant="amber" />
+          <button type="button" className="retry-link-btn" onClick={error.retry}>{t("tryAgain")}</button>
+        </div>
+      )}
+
+      {/* Checklist from the API */}
       <div className="readiness-checklist-card">
-        {checklistItems.map((item, idx) => (
+        {items.map((i) => (
           <ChecklistRow
-            key={idx}
-            label={item.label}
-            isComplete={item.isComplete}
-            statusBadge={item.badge}
+            key={i.id}
+            label={t(`ck_${i.id}` as Key)}
+            isComplete={i.done}
+            statusBadge={i.done ? "✓" : `${Math.round(i.points)}/${i.max}`}
           />
         ))}
       </div>
 
-      {/* Reassurance text */}
-      <p className="nominee-help-note">
-        You can fill the nominee name at the bank counter or keep it as is.
-      </p>
+      {todos.length > 0 && (
+        <div className="todo-list-card">
+          <strong>{t("todoTitle")}</strong>
+          <ul>
+            {todos.map((i) => (
+              <li key={i.id}>{i.todo![msgLang]}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-      {/* Primary Action Button */}
+      {notEligible && (
+        <div className="api-error-box" role="alert">
+          <WarningBanner message={t("notEligible")} icon="alert" variant="amber" />
+          <button type="button" className="retry-link-btn" onClick={() => navigate("/problems")}>{t("fixProblems")}</button>
+        </div>
+      )}
+
       <div className="screen-bottom-action">
-        <PrimaryButton onClick={onNext}>
-          Send to bank officer
+        <PrimaryButton onClick={() => void send()} disabled={loading || sending}>
+          {sending ? t("sending") : t("sendBank")}
         </PrimaryButton>
       </div>
 
-      {/* Bottom Help Link */}
-      <BottomHelpBar onHelpClick={onOpenHelp} />
+      <BottomHelpBar onHelpClick={onOpenHelp} label={t("help")} />
     </div>
   );
 }
