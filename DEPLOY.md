@@ -1,5 +1,59 @@
 # Deploying Saathi
 
+There are two ways. **If two separate services have given you trouble, use Option A.**
+
+---
+
+# Option A: one service (simplest)
+
+The server serves the built web app itself: **one URL, no CORS, and no build-time API URL that can
+fall out of step with the backend.** The web app calls the API on its own origin.
+
+On Render, **New → Web Service** → this repo, then set:
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | *(leave empty — the repository root)* |
+| Build Command | `npm install && npm run deploy:build` |
+| Start Command | `npm run deploy:start` |
+| Health Check Path | `/health` |
+
+Environment variables: the server ones from the table in Option B below, **plus `SERVE_WEB=true`**, plus
+the five `VITE_*` values (they are needed at build time, when the web app is compiled).
+
+- Leave `VITE_API_URL` **unset**. Empty means "same origin", which is exactly right here.
+- Set `CORS_ORIGINS` to your one URL, and `PUBLIC_API_URL` to the same URL.
+- Add that URL's domain to Firebase → Authentication → Settings → Authorised domains.
+
+Then check, in this order:
+
+1. `<url>/health` → `{"ok":true,"mockAi":false}`
+2. `<url>/api` → `{"ok":true,"service":"saathi-api","health":"/health","web":true}` — `web:true` confirms the app is being served.
+3. `<url>/` → the Saathi app. `<url>/bank` → the banker screen (it is a client-side route, and the server hands it the app shell).
+
+If `/api` reports `web:false`, the web build was not found: the build command did not run
+`npm run deploy:build`, or `SERVE_WEB` is not `true`. The server says so in its log and keeps the API running.
+
+To run this locally: `npm run deploy:build` then `cd server && SERVE_WEB=true npm start`, and open <http://localhost:8080>.
+
+## The same thing on another platform
+
+Option A is plain Node with no platform-specific code, so it runs anywhere that can run
+`npm install` and a long-lived process. The two commands and the variables above are all that change.
+
+- **Railway** — `server/railway.json` is already here. New Project → Deploy from GitHub → set the same
+  build and start commands, add the variables, then Settings → Networking → **Generate Domain**.
+- **Fly.io** — `fly launch --no-deploy`, set the same commands, `fly secrets set NAME=value` for each
+  variable, then `fly deploy`.
+
+Anywhere you go, the server must be reached on `process.env.PORT`; it already binds `0.0.0.0`.
+It needs a real Node process, not a serverless function: it converts audio with ffmpeg and
+keeps a retention timer.
+
+---
+
+# Option B: two services
+
 **Server (Express) → Render. Web (Vite) → Vercel. Data, sign-in and rules stay in Firebase (`saathi-f5b30`).**
 
 Do it in this order: **Render first**, then Vercel, then come back to Render for two values, then Firebase.
@@ -103,6 +157,10 @@ that is fast. To keep it awake during an event, hit `/health` every 10 minutes (
 
 | Symptom | Cause |
 | --- | --- |
+| The API host returns `Not Found` and the headers show `x-render-routing: no-server` | Nothing of ours is running: the platform has no live instance, so the request never reaches Express. Read the service's **Logs** — the server names any variable it is missing. It no longer exits over one. |
+| Changed `VITE_API_URL` but nothing happened | It is baked in at **build** time. Rebuild the site (Render: Manual Deploy → Clear build cache & deploy). Option A avoids this entirely. |
+| "Cannot reach Saathi" on screen | The API URL is wrong or the service is down. |
+| "Could not sign in to Saathi" on screen | Firebase, not the network: add the site's domain under Authentication → Settings → Authorised domains. The browser console names the exact code. |
 | Web says "not set up yet" | `VITE_FIREBASE_*` missing on Vercel — add them and redeploy. |
 | Browser console: CORS error | `CORS_ORIGINS` is not exactly the Vercel origin. |
 | "Live updates are blocked by the database rules" | Step 4.3 not done. |

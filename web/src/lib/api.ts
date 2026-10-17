@@ -1,10 +1,14 @@
 import { getIdToken, NotConfiguredError } from "./firebase";
 
 const CONFIGURED = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
-// Every request goes to VITE_API_URL. A local default exists only for `npm run dev`; a production build without it is a setup error.
+/**
+ * Where the API lives. VITE_API_URL is baked in at BUILD time, so changing it needs a rebuild.
+ * Empty means same origin, which is exactly right when the server serves this build itself
+ * (SERVE_WEB=true): one URL, and no CORS. A local default exists only for `npm run dev`.
+ */
 export const API_BASE = (CONFIGURED || (import.meta.env.DEV ? "http://localhost:8080" : "")).replace(/\/$/, "");
 const BASE = API_BASE;
-if (!API_BASE) console.error("VITE_API_URL is not set: the app cannot reach the Saathi server.");
+if (!API_BASE && !import.meta.env.DEV) console.info("VITE_API_URL is not set: calling the API on this same origin.");
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) {

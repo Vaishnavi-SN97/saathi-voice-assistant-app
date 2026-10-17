@@ -15,6 +15,13 @@ const schema = z.object({
   CORS_ORIGINS: z.string().default("http://localhost:5173"),
   PUBLIC_API_URL: z.string().default("http://localhost:8080").transform((v) => v.trim().replace(/\/+$/, "")),
   JSON_LIMIT: z.string().default("1mb"),
+  /**
+   * Serve the built web app from this server (single-service deploy: one URL, no CORS,
+   * no build-time API URL to keep in step). Needs `npm --prefix web run build` first.
+   */
+  SERVE_WEB: bool("false"),
+  /** Where that build is, if not the default <repo>/web/dist. */
+  WEB_DIST: z.string().optional(),
   SARVAM_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_API_KEY_BACKUP: z.string().optional(),
