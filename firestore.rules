@@ -9,6 +9,8 @@ service cloud.firestore {
       allow read: if request.auth != null && (resource.data.customerUid == request.auth.uid || isBanker());
       allow write: if false;
       match /files/{kind} { allow read, write: if false; }
+      // Audit trail: bankers only (customers never read it; all writes go through the API).
+      match /audit/{auditId} { allow read: if isBanker(); allow write: if false; }
     }
     match /audit/{id} { allow read, write: if false; }
     match /media/{id} { allow read, write: if false; }

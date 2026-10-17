@@ -16,6 +16,10 @@ interface Options {
   json?: unknown;
   form?: FormData;
   signal?: AbortSignal;
+  /** Where the Bearer token comes from. Default: the customer's anonymous Firebase user; the banker app passes its own. */
+  tokenProvider?: (forceRefresh: boolean) => Promise<string>;
+  /** Return the raw Response body as a Blob (images, PDF) instead of JSON. */
+  blob?: boolean;
 }
 
 /**
@@ -23,10 +27,11 @@ interface Options {
  * A 401 triggers one retry with a force-refreshed token (covers a stale or just-expired token).
  */
 export async function api<T = unknown>(path: string, opts: Options = {}): Promise<T> {
+  const getToken = opts.tokenProvider ?? getIdToken;
   const send = async (forceRefresh: boolean): Promise<Response> => {
     let token: string;
     try {
-      token = await getIdToken(forceRefresh);
+      token = await getToken(forceRefresh);
     } catch (e) {
       if (e instanceof NotConfiguredError) throw new ApiError(-1, "not_configured", e.message);
       throw new ApiError(0, "auth_failed", "Could not sign in");
@@ -49,6 +54,7 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   let res = await send(false);
   if (res.status === 401) res = await send(true);
 
+  if (opts.blob && res.ok) return (await res.blob()) as T;
   const data = await res.json().catch(() => null);
   if (!res.ok) throw new ApiError(res.status, data?.code ?? "error", data?.error ?? `Request failed (${res.status})`);
   return data as T;

@@ -39,6 +39,16 @@
 
 - [x] P9 web: live status screen (Firestore onSnapshot), real QR screen, done screen, `npm run decide` to act as the bank
 
+- [x] P10 banker app under /bank: login, live queue, application detail, approve / send back
+
+## P10 decisions
+- `/bank` (queue), `/bank/login`, `/bank/app/:id` live in `web/src/bank/`; `main.tsx` picks the banker app for any /bank path, the customer app otherwise. English only (bank staff), same colour tokens.
+- Separate Firebase app instance (`saathi-bank`) so a banker session never mixes with a customer's anonymous one in the same browser. Sign-in = Firebase email/password, then the `role=banker` custom claim is required (otherwise signed out with a clear message). Give an account the claim with `npm run set-banker -- <email>` in server/ (the person must sign in again). Email/Password sign-in must be enabled in the Firebase console.
+- Queue: Firestore onSnapshot on `applications`, tabs To review / In progress / Decided / All (drafts only under All), sorted by readiness (highest first, then longest waiting), status chips, blocking/warning counts, and the green "Quick approve" badge when `readiness.quickApprove` (score 90+ AND all 3 documents present and clear, see P4).
+- Detail: photos via GET /files/:id/:kind fetched with the banker ID token and shown as blob URLs (revoked on leave); extracted fields with confidence, anything under 80% (or not read) in amber; Aadhaar shown masked (only the last 4 are stored anyway); mismatches + readiness checklist; PDF viewer (blob in an iframe, or new tab); audit list (live); Approve (optional note) and Send back (English reason, required; translated + voice note for the customer). Status changes arrive through the live listener, no refresh.
+- firestore.rules: bankers may now read `applications/{id}/audit` (customers still cannot). REDEPLOY the rules for the audit list and the queue to work: `npx firebase-tools deploy --only firestore:rules`.
+- api(): new `tokenProvider` and `blob` options (used by the banker app).
+
 ## P9 decisions
 - Status screen reads ONLY the live application document (Firestore onSnapshot via `useApplication`); the timeline, headline card and buttons follow `status` + `metrics`. sent_back shows the bank's translated note and a "Fix and send again" button; approved leads to the QR screen; signed leads to the new /done screen.
 - Firestore rules (`firestore.rules`: owner or banker may read an application, nobody writes from the client) must be DEPLOYED for the live listener to work: `npx firebase-tools login` then `npx firebase-tools deploy --only firestore:rules` from the repo root (no Firebase CLI is installed here) (`firebase.json` + `.firebaserc` for project saathi-f5b30 added). Until then the screen shows "Live updates are blocked by the database rules". I did not deploy anything.
