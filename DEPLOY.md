@@ -87,10 +87,13 @@ The app is a phone web app: open the Vercel URL in **Chrome (Android)** or **Saf
 Screen**. It then launches full screen with the Saathi icon and no browser bars, and the microphone, camera and
 QR all work because Vercel serves it over https.
 
-Do NOT test from a LAN address like : browsers only allow the microphone and camera on
-https or localhost, so those features will be dead. Deploy first, then open the https URL on the phone.
+Do NOT test from a LAN address like `http://192.168.1.5:8443`: browsers only allow the microphone and camera on
+https or localhost, so those features will be dead on the phone. Deploy first, then open the https URL there.
 
-## 6. Cold starts (free plan)
+Expo Go is not a route for this app — it runs React Native and cannot load a Vite build. The home-screen install
+above gives the same app-like result with no extra code.
+
+## 7. Cold starts (free plan)
 
 Render's free plan sleeps after about 15 minutes idle and takes 30–60 seconds to wake, so the first call after a
 pause looks broken. **Before a demo, open `<render url>/health` once** and wait for `{"ok":true}`; everything after
