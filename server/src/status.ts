@@ -1,15 +1,15 @@
-export const STATUSES = ["draft", "docs_pending", "submitted", "in_review", "needs_info", "approved", "rejected", "disbursed"] as const;
+// SPEC: draft -> docs_pending -> needs_fix -> ready_for_review -> approved | sent_back -> signed (sent_back -> needs_fix)
+export const STATUSES = ["draft", "docs_pending", "needs_fix", "ready_for_review", "approved", "sent_back", "signed"] as const;
 export type Status = (typeof STATUSES)[number];
 
 export const TRANSITIONS: Record<Status, Status[]> = {
   draft: ["docs_pending"],
-  docs_pending: ["submitted"],
-  submitted: ["in_review"],
-  in_review: ["approved", "rejected", "needs_info"],
-  needs_info: ["submitted"],
-  approved: ["disbursed"],
-  rejected: [],
-  disbursed: [],
+  docs_pending: ["needs_fix", "ready_for_review"],
+  needs_fix: ["ready_for_review"],
+  ready_for_review: ["approved", "sent_back", "needs_fix"],
+  approved: ["signed"],
+  sent_back: ["needs_fix"],
+  signed: [],
 };
 
 export const canTransition = (from: Status, to: Status) => TRANSITIONS[from]?.includes(to) ?? false;

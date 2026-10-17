@@ -33,7 +33,7 @@ export interface Ctx {
 }
 
 export function createApp({ env, store, verifier, ai, extractor }: Deps) {
-  const media = new MediaStore(store, env.JWT_SECRET);
+  const media = new MediaStore(store, env.QR_JWT_SECRET);
   const ctx: Ctx = { store, files: new FileStore(store), media, ai: ai ?? createAi(env), extract: extractor ?? createExtractor(env), ttsCache: new TtsCache(media) };
 
   const app = express();

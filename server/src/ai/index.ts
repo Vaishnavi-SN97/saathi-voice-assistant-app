@@ -4,6 +4,8 @@ import { createSarvam } from "../services/sarvam.js";
 import { mockStt, mockTts } from "./mock.js";
 
 export interface Ai {
+  /** Voice name, part of the TTS cache key (so mock audio never pollutes real audio). */
+  voice: string;
   tts(text: string, lang: Lang, pace?: number): Promise<{ audio: Buffer; mime: string }>;
   /** `wav` is 16 kHz mono WAV. Omit lang to auto-detect. */
   stt(wav: Buffer, lang?: Lang): Promise<string>;
@@ -11,7 +13,7 @@ export interface Ai {
 
 export function createAi(env: Env): Ai {
   if (env.MOCK_AI) {
-    return { tts: async (t, l) => ({ audio: mockTts(t, l), mime: "audio/wav" }), stt: mockStt };
+    return { voice: "mock", tts: async (t, l) => ({ audio: mockTts(t, l), mime: "audio/wav" }), stt: mockStt };
   }
   return createSarvam(env.SARVAM_API_KEY);
 }

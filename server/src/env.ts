@@ -1,18 +1,28 @@
 import "dotenv/config";
 import { z } from "zod";
 
+const bool = (def: string) => z.string().default(def).transform((v) => v.trim() === "true" || v.trim() === "1");
+
+// Names follow SPEC.md. JSON_LIMIT is an extra optional knob.
 const schema = z.object({
-  PORT: z.coerce.number().default(3001),
-  CORS_ORIGINS: z.string().default("http://localhost:5173,http://localhost:8443"),
+  PORT: z.coerce.number().default(8080),
+  CORS_ORIGINS: z.string().default("http://localhost:5173"),
+  PUBLIC_API_URL: z.string().default("http://localhost:8080"),
   JSON_LIMIT: z.string().default("1mb"),
-  MOCK_AI: z.string().default("true").transform((v) => v === "true" || v === "1"),
-  JWT_SECRET: z.string().default("dev-only-secret-change-me"),
-  FIREBASE_PROJECT_ID: z.string().optional(),
-  FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
-  GEMINI_API_KEY: z.string().optional(),
   SARVAM_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
   GEMINI_API_KEY_BACKUP: z.string().optional(),
   GEMINI_MODEL: z.string().optional(),
+  FIREBASE_PROJECT_ID: z.string().default("saathi-f5b30"),
+  FIREBASE_CLIENT_EMAIL: z.string().optional(),
+  FIREBASE_PRIVATE_KEY: z.string().optional().transform((v) => v?.replace(/\\n/g, "\n")),
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_WHATSAPP_FROM: z.string().optional(),
+  NOTIFY_MODE: z.enum(["direct", "off"]).default("direct"),
+  MOCK_AI: bool("false"),
+  QR_JWT_SECRET: z.string().default("dev-only-secret-change-me"),
+  BASELINE_MANUAL_MINUTES: z.coerce.number().default(30),
 });
 
 export type Env = z.infer<typeof schema>;

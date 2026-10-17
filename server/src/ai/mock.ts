@@ -1,4 +1,7 @@
-/** Tiny deterministic stand-ins used when MOCK_AI=true. */
+import type { Field, Lang } from "../form.js";
+import { classifyYesNo } from "../services/yesno.js";
+
+/** Canned stand-ins used when MOCK_AI=true. */
 export function mockTts(_text: string, _lang: string): Buffer {
   // 0.1 s of 8 kHz 16-bit mono silence as WAV.
   const samples = 800, dataLen = samples * 2;
@@ -10,16 +13,41 @@ export function mockTts(_text: string, _lang: string): Buffer {
   return b;
 }
 
-export const mockStt = async (_wav: Buffer, _lang?: string) => "mock transcript";
+export const mockStt = async (_wav: Buffer, _lang?: Lang) => "mock transcript";
 
-/** Deterministic extractor for MOCK_AI: numbers = first digit run, text = the trimmed utterance. */
+export interface Extracted { value: string | number | boolean | null; valueEn: string | null; confidence: number }
+
+const toAscii = (s: string) => s.replace(/[०-९]/g, (c) => String(c.charCodeAt(0) - 0x0966));
+
+/** Deterministic extractor for MOCK_AI: simple parsing of typed-style answers, confidence 0.9 on success. */
 export const mockExtractor = {
-  async extractAnswer(q: { type: string }, text: string, _lang: string) {
+  async extractAnswer(f: Field, text: string, _lang: Lang): Promise<Extracted> {
     const t = text.trim();
-    if (q.type === "number") {
-      const digits = t.replace(/[\u0966-\u096F]/g, (c) => String(c.charCodeAt(0) - 0x0966)).replace(/,/g, "").match(/\d+/);
-      return { value: digits ? Number(digits[0]) : null };
+    const none: Extracted = { value: null, valueEn: null, confidence: 0 };
+    const ok = (value: string | boolean, valueEn: string | null = typeof value === "string" ? value : null): Extracted => ({ value, valueEn, confidence: 0.9 });
+    switch (f.type) {
+      case "date": {
+        const m = toAscii(t).match(/(\d{1,4})[\/\-. ](\d{1,2})[\/\-. ](\d{1,4})/);
+        if (!m) return none;
+        const [a, b, c] = m.slice(1).map(Number);
+        const [y, mo, d] = a > 31 ? [a, b, c] : [c, b, a];
+        return ok(`${String(y).padStart(4, "0")}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+      }
+      case "mobile": {
+        const d = toAscii(t).replace(/\D/g, "");
+        return d ? ok(d) : none;
+      }
+      case "choice": {
+        const lower = t.toLowerCase();
+        const o = f.options?.find((o) => o.value === lower || Object.values(o.label).some((l) => l.toLowerCase() === lower || lower.includes(l.toLowerCase())));
+        return o ? ok(o.value) : none;
+      }
+      case "yesno": {
+        const v = classifyYesNo(t);
+        return v === "unclear" ? none : ok(v === "yes");
+      }
+      default:
+        return t ? ok(t) : none;
     }
-    return { value: t && t.length <= 100 ? t : null };
   },
 };

@@ -6,7 +6,7 @@ service cloud.firestore {
     function isBanker() { return request.auth != null && request.auth.token.role == 'banker'; }
 
     match /applications/{appId} {
-      allow read: if request.auth != null && (resource.data.ownerUid == request.auth.uid || isBanker());
+      allow read: if request.auth != null && (resource.data.customerUid == request.auth.uid || isBanker());
       allow write: if false;
       match /files/{kind} { allow read, write: if false; }
     }

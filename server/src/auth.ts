@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "./errors.js";
 
-export type Role = "applicant" | "banker";
+export type Role = "customer" | "banker";
 export interface AuthUser { uid: string; role: Role; anonymous: boolean }
 export type TokenVerifier = (idToken: string) => Promise<AuthUser>;
 

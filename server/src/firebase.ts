@@ -7,12 +7,11 @@ import type { TokenVerifier } from "./auth.js";
 
 function init(env: Env) {
   if (getApps().length) return getApps()[0];
-  const raw = env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  const json = raw ? (raw.trim().startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8")) : null;
-  return initializeApp({
-    credential: json ? cert(JSON.parse(json)) : applicationDefault(),
-    projectId: env.FIREBASE_PROJECT_ID,
-  });
+  const credential =
+    env.FIREBASE_CLIENT_EMAIL && env.FIREBASE_PRIVATE_KEY
+      ? cert({ projectId: env.FIREBASE_PROJECT_ID, clientEmail: env.FIREBASE_CLIENT_EMAIL, privateKey: env.FIREBASE_PRIVATE_KEY })
+      : applicationDefault();
+  return initializeApp({ credential, projectId: env.FIREBASE_PROJECT_ID });
 }
 
 export function firebaseDeps(env: Env): { store: FirestoreStore; verifier: TokenVerifier } {
@@ -26,7 +25,7 @@ export function firebaseDeps(env: Env): { store: FirestoreStore; verifier: Token
       const d = await auth.verifyIdToken(token);
       return {
         uid: d.uid,
-        role: d.role === "banker" ? "banker" : "applicant",
+        role: d.role === "banker" ? "banker" : "customer",
         anonymous: d.firebase?.sign_in_provider === "anonymous",
       };
     },

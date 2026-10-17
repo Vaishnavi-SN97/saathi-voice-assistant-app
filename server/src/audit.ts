@@ -1,13 +1,15 @@
 import type { AuthUser } from "./auth.js";
 import type { Store } from "./store.js";
 
-export async function audit(store: Store, actor: AuthUser | null, action: string, appId?: string, meta: Record<string, unknown> = {}) {
-  return store.add("audit", {
+/**
+ * Writes applications/{appId}/audit {at, actor, action, detail} (SPEC).
+ * Never put secrets, OTPs, raw answers or full ID numbers in `detail`.
+ */
+export async function audit(store: Store, actor: AuthUser | "system", action: string, appId: string, detail: Record<string, unknown> = {}) {
+  return store.add(`applications/${appId}/audit`, {
     at: new Date().toISOString(),
-    actorUid: actor?.uid ?? null,
-    role: actor?.role ?? null,
+    actor: actor === "system" ? "system" : actor.uid,
     action,
-    appId: appId ?? null,
-    meta,
+    detail,
   });
 }

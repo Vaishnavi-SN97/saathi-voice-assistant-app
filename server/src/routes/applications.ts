@@ -2,42 +2,40 @@ import { Router } from "express";
 import { z } from "zod";
 import type { Ctx } from "../app.js";
 import { audit } from "../audit.js";
-import { form, LANGS, type Lang } from "../form.js";
-import { ttsCached } from "../services/sarvam.js";
+import { CODES, form, toLang } from "../form.js";
+import { fieldOut } from "../services/interview-engine.js";
 
 const createBody = z.object({
-  language: z.enum(LANGS),
+  language: z.string().transform((v, c) => toLang(v) ?? (c.addIssue({ code: "custom", message: "unsupported language" }), z.NEVER)),
   consent: z.literal(true),
 });
 
-export const applicationsRouter = ({ store, media, ai, ttsCache }: Ctx) =>
+export const applicationsRouter = (ctx: Ctx) =>
   Router().post("/", async (req, res, next) => {
     try {
-      const { language: lang } = createBody.parse(req.body) as { language: Lang };
+      const { language: lang } = createBody.parse(req.body);
       const user = req.user!;
-      const q = form.questions[0];
       const now = new Date().toISOString();
 
-      const id = await store.add("applications", {
-        ownerUid: user.uid,
-        language: lang,
+      // Shape follows SPEC "Application".
+      const id = await ctx.store.add("applications", {
+        customerUid: user.uid,
+        language: CODES[lang],
         status: "draft",
-        consent: { given: true, at: now, formVersion: form.version, text: form.consent[lang] },
-        currentQuestion: q.id,
+        consent: { at: now, version: form.version },
         answers: {},
-        interview: { state: "asking", pending: null, attempts: 0 },
+        documents: {},
+        mismatches: [],
+        readiness: { score: 0, items: [] },
+        notify: { phone: null, consent: false },
+        metrics: { startedAt: now, scamBlocks: 0, mistakesCaught: 0 },
+        interview: { attempts: 0 },
         createdAt: now,
         updatedAt: now,
       });
-      await audit(store, user, "application.create", id, { language: lang, anonymous: user.anonymous });
-      await audit(store, user, "consent.given", id, { formVersion: form.version });
+      await audit(ctx.store, user, "application.create", id, { language: CODES[lang], anonymous: user.anonymous });
+      await audit(ctx.store, user, "consent.given", id, { version: form.version });
 
-      const text = q.prompt[lang];
-      const audioId = await ttsCached(ai, ttsCache, text, lang);
-      res.status(201).json({
-        id,
-        status: "draft",
-        question: { id: q.id, type: q.type, prompt: text, audioUrl: media.url(audioId) },
-      });
+      res.status(201).json({ id, status: "draft", question: await fieldOut(ctx, form.fields[0], lang) });
     } catch (e) { next(e); }
   });

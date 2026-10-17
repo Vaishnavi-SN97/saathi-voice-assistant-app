@@ -9,26 +9,24 @@ import { canTransition, TRANSITIONS } from "./status.js";
 import { MemoryStore } from "./store.js";
 
 describe("status transitions", () => {
-  it("allows the documented flow", () => {
-    assert.ok(canTransition("draft", "docs_pending"));
-    assert.ok(canTransition("docs_pending", "submitted"));
-    assert.ok(canTransition("submitted", "in_review"));
-    assert.ok(canTransition("in_review", "approved"));
-    assert.ok(canTransition("needs_info", "submitted"));
+  it("allows the SPEC flow", () => {
+    const flow = [["draft", "docs_pending"], ["docs_pending", "needs_fix"], ["docs_pending", "ready_for_review"], ["needs_fix", "ready_for_review"], ["ready_for_review", "approved"], ["ready_for_review", "sent_back"], ["sent_back", "needs_fix"], ["approved", "signed"]] as const;
+    for (const [a, b] of flow) assert.ok(canTransition(a, b), a + " -> " + b);
   });
-  it("rejects illegal moves and terminal exits", () => {
+  it("rejects illegal moves and the terminal state", () => {
     assert.ok(!canTransition("draft", "approved"));
     assert.ok(!canTransition("approved", "draft"));
-    assert.deepEqual(TRANSITIONS.rejected, []);
+    assert.ok(!canTransition("sent_back", "approved"));
+    assert.deepEqual(TRANSITIONS.signed, []);
   });
 });
 
 describe("api", () => {
   const store = new MemoryStore();
-  const env = loadEnv({ MOCK_AI: "true", JWT_SECRET: "test-secret" } as NodeJS.ProcessEnv);
+  const env = loadEnv({ MOCK_AI: "true", QR_JWT_SECRET: "test-secret" } as NodeJS.ProcessEnv);
   const verifier = async (t: string) => {
-    if (t === "anon") return { uid: "anon-1", role: "applicant" as const, anonymous: true };
-    if (t === "other") return { uid: "anon-2", role: "applicant" as const, anonymous: true };
+    if (t === "anon") return { uid: "anon-1", role: "customer" as const, anonymous: true };
+    if (t === "other") return { uid: "anon-2", role: "customer" as const, anonymous: true };
     if (t === "banker") return { uid: "b-1", role: "banker" as const, anonymous: false };
     throw new Error("bad");
   };
@@ -54,15 +52,16 @@ describe("api", () => {
     assert.equal(r.status, 201);
     const body = await r.json();
     assert.equal(body.question.id, "full_name");
+    assert.equal(store.docs.get(`applications/${body.id}`)!.language, "hi-IN");
 
-    const audits = [...store.docs.entries()].filter(([k]) => k.startsWith("audit/")).map(([, v]) => v);
-    assert.ok(audits.some((a) => a.action === "application.create" && a.actorUid === "anon-1" && a.appId === body.id));
+    const audits = [...store.docs.entries()].filter(([k]) => k.startsWith(`applications/${body.id}/audit/`)).map(([, v]) => v);
+    assert.ok(audits.some((a) => a.action === "application.create" && a.actor === "anon-1"));
 
     assert.equal((await fetch(base() + body.question.audioUrl)).status, 200);
     assert.equal((await fetch(`${base()}/media/x?token=bad`)).status, 401);
 
-    store.docs.set(`applications/${body.id}/files/photo`, { data: Buffer.from("x"), mime: "image/jpeg" });
-    const get = (tok: string) => fetch(`${base()}/files/${body.id}/photo`, { headers: { authorization: `Bearer ${tok}` } });
+    store.docs.set(`applications/${body.id}/files/aadhaar`, { data: Buffer.from("x"), mime: "image/jpeg" });
+    const get = (tok: string) => fetch(`${base()}/files/${body.id}/aadhaar`, { headers: { authorization: `Bearer ${tok}` } });
     assert.equal((await get("anon")).status, 200);
     assert.equal((await get("banker")).status, 200);
     assert.equal((await get("other")).status, 403);

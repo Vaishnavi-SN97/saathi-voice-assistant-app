@@ -1,79 +1,103 @@
 {
   "version": 1,
   "consent": {
-    "en": "I agree to Saathi recording my voice and documents to process my loan application.",
-    "hi": "मैं सहमत हूँ कि साथी मेरे ऋण आवेदन को संसाधित करने के लिए मेरी आवाज़ और दस्तावेज़ रिकॉर्ड करे।",
-    "kn": "ನನ್ನ ಸಾಲದ ಅರ್ಜಿಯನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲು ಸಾಥಿ ನನ್ನ ಧ್ವನಿ ಮತ್ತು ದಾಖಲೆಗಳನ್ನು ರೆಕಾರ್ಡ್ ಮಾಡಲು ನಾನು ಒಪ್ಪುತ್ತೇನೆ."
+    "en": "I agree to Saathi recording my voice and documents to help fill my savings account form.",
+    "hi": "मैं सहमत हूँ कि साथी मेरा बचत खाता फ़ॉर्म भरने में मदद के लिए मेरी आवाज़ और दस्तावेज़ रिकॉर्ड करे।",
+    "kn": "ನನ್ನ ಉಳಿತಾಯ ಖಾತೆ ಫಾರ್ಮ್ ತುಂಬಲು ಸಹಾಯ ಮಾಡಲು ಸಾಥಿ ನನ್ನ ಧ್ವನಿ ಮತ್ತು ದಾಖಲೆಗಳನ್ನು ರೆಕಾರ್ಡ್ ಮಾಡಲು ನಾನು ಒಪ್ಪುತ್ತೇನೆ."
   },
-  "questions": [
+  "fields": [
     {
       "id": "full_name",
-      "type": "text",
-      "label": {
-        "en": "Full name",
-        "hi": "पूरा नाम",
-        "kn": "ಪೂರ್ಣ ಹೆಸರು"
-      },
+      "type": "name",
+      "required": true,
+      "label": { "en": "Full name", "hi": "पूरा नाम", "kn": "ಪೂರ್ಣ ಹೆಸರು" },
+      "prompt": { "en": "What is your full name?", "hi": "आपका पूरा नाम क्या है?", "kn": "ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರು ಏನು?" }
+    },
+    {
+      "id": "dob",
+      "type": "date",
+      "required": true,
+      "label": { "en": "Date of birth", "hi": "जन्म तिथि", "kn": "ಜನ್ಮ ದಿನಾಂಕ" },
       "prompt": {
-        "en": "What is your full name?",
-        "hi": "आपका पूरा नाम क्या है?",
-        "kn": "ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರು ಏನು?"
+        "en": "What is your date of birth? Please say the day, month and year.",
+        "hi": "आपकी जन्म तिथि क्या है? कृपया दिन, महीना और साल बताएं।",
+        "kn": "ನಿಮ್ಮ ಜನ್ಮ ದಿನಾಂಕ ಯಾವುದು? ದಯವಿಟ್ಟು ದಿನ, ತಿಂಗಳು ಮತ್ತು ವರ್ಷ ಹೇಳಿ."
       }
+    },
+    {
+      "id": "mobile",
+      "type": "mobile",
+      "required": true,
+      "label": { "en": "Mobile number", "hi": "मोबाइल नंबर", "kn": "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ" },
+      "prompt": {
+        "en": "What is your 10-digit mobile number?",
+        "hi": "आपका 10 अंकों का मोबाइल नंबर क्या है?",
+        "kn": "ನಿಮ್ಮ 10 ಅಂಕಿಗಳ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ಯಾವುದು?"
+      }
+    },
+    {
+      "id": "address",
+      "type": "text",
+      "required": true,
+      "label": { "en": "Address", "hi": "पता", "kn": "ವಿಳಾಸ" },
+      "prompt": { "en": "What is your home address?", "hi": "आपके घर का पता क्या है?", "kn": "ನಿಮ್ಮ ಮನೆಯ ವಿಳಾಸ ಯಾವುದು?" }
     },
     {
       "id": "occupation",
-      "type": "text",
-      "label": {
-        "en": "Work",
-        "hi": "काम",
-        "kn": "ಕೆಲಸ"
-      },
+      "type": "choice",
+      "required": true,
+      "label": { "en": "Occupation", "hi": "काम", "kn": "ಕೆಲಸ" },
       "prompt": {
-        "en": "What work do you do?",
-        "hi": "आप क्या काम करते हैं?",
-        "kn": "ನೀವು ಯಾವ ಕೆಲಸ ಮಾಡುತ್ತೀರಿ?"
+        "en": "What is your occupation? For example retired, homemaker, farmer, business or salaried.",
+        "hi": "आप क्या काम करते हैं? जैसे सेवानिवृत्त, गृहिणी, किसान, व्यापार या नौकरीपेशा।",
+        "kn": "ನೀವು ಯಾವ ಕೆಲಸ ಮಾಡುತ್ತೀರಿ? ಉದಾಹರಣೆಗೆ ನಿವೃತ್ತ, ಗೃಹಿಣಿ, ರೈತ, ವ್ಯಾಪಾರ ಅಥವಾ ಉದ್ಯೋಗಿ."
+      },
+      "options": [
+        { "value": "retired", "label": { "en": "Retired", "hi": "सेवानिवृत्त", "kn": "ನಿವೃತ್ತ" } },
+        { "value": "homemaker", "label": { "en": "Homemaker", "hi": "गृहिणी", "kn": "ಗೃಹಿಣಿ" } },
+        { "value": "farmer", "label": { "en": "Farmer", "hi": "किसान", "kn": "ರೈತ" } },
+        { "value": "business", "label": { "en": "Business", "hi": "व्यापार", "kn": "ವ್ಯಾಪಾರ" } },
+        { "value": "salaried", "label": { "en": "Salaried", "hi": "नौकरीपेशा", "kn": "ಉದ್ಯೋಗಿ" } },
+        { "value": "other", "label": { "en": "Other", "hi": "अन्य", "kn": "ಇತರೆ" } }
+      ]
+    },
+    {
+      "id": "nominee_name",
+      "type": "name",
+      "required": true,
+      "label": { "en": "Nominee name", "hi": "नामित व्यक्ति का नाम", "kn": "ನಾಮನಿರ್ದೇಶಿತರ ಹೆಸರು" },
+      "prompt": {
+        "en": "Who should be the nominee for this account? Please tell me their full name.",
+        "hi": "इस खाते के लिए नामित व्यक्ति कौन होगा? कृपया उनका पूरा नाम बताएं।",
+        "kn": "ಈ ಖಾತೆಗೆ ನಾಮನಿರ್ದೇಶಿತರು ಯಾರು? ದಯವಿಟ್ಟು ಅವರ ಪೂರ್ಣ ಹೆಸರು ಹೇಳಿ."
       }
     },
     {
-      "id": "monthly_income",
-      "type": "number",
-      "label": {
-        "en": "Monthly income",
-        "hi": "मासिक आय",
-        "kn": "ಮಾಸಿಕ ಆದಾಯ"
-      },
+      "id": "nominee_relation",
+      "type": "choice",
+      "required": true,
+      "label": { "en": "Nominee relation", "hi": "नामित व्यक्ति से रिश्ता", "kn": "ನಾಮನಿರ್ದೇಶಿತರ ಸಂಬಂಧ" },
       "prompt": {
-        "en": "How much do you earn in a month, in rupees?",
-        "hi": "आप महीने में कितने रुपये कमाते हैं?",
-        "kn": "ನೀವು ತಿಂಗಳಿಗೆ ಎಷ್ಟು ರೂಪಾಯಿ ಗಳಿಸುತ್ತೀರಿ?"
-      }
+        "en": "How is the nominee related to you? For example spouse, son or daughter.",
+        "hi": "नामित व्यक्ति आपके क्या लगते हैं? जैसे पति या पत्नी, बेटा या बेटी।",
+        "kn": "ನಾಮನಿರ್ದೇಶಿತರು ನಿಮಗೆ ಏನಾಗಬೇಕು? ಉದಾಹರಣೆಗೆ ಪತಿ ಅಥವಾ ಪತ್ನಿ, ಮಗ ಅಥವಾ ಮಗಳು."
+      },
+      "options": [
+        { "value": "spouse", "label": { "en": "Spouse", "hi": "पति/पत्नी", "kn": "ಪತಿ/ಪತ್ನಿ" } },
+        { "value": "son", "label": { "en": "Son", "hi": "बेटा", "kn": "ಮಗ" } },
+        { "value": "daughter", "label": { "en": "Daughter", "hi": "बेटी", "kn": "ಮಗಳು" } },
+        { "value": "other", "label": { "en": "Other", "hi": "अन्य", "kn": "ಇತರೆ" } }
+      ]
     },
     {
-      "id": "loan_amount",
-      "type": "number",
-      "label": {
-        "en": "Loan amount",
-        "hi": "ऋण राशि",
-        "kn": "ಸಾಲದ ಮೊತ್ತ"
-      },
+      "id": "notify_consent",
+      "type": "yesno",
+      "required": true,
+      "label": { "en": "WhatsApp updates", "hi": "व्हाट्सऐप अपडेट", "kn": "ವಾಟ್ಸಾಪ್ ಅಪ್‌ಡೇಟ್" },
       "prompt": {
-        "en": "How much loan do you need, in rupees?",
-        "hi": "आपको कितने रुपये का ऋण चाहिए?",
-        "kn": "ನಿಮಗೆ ಎಷ್ಟು ರೂಪಾಯಿ ಸಾಲ ಬೇಕು?"
-      }
-    },
-    {
-      "id": "loan_purpose",
-      "type": "text",
-      "label": {
-        "en": "Loan purpose",
-        "hi": "ऋण का उद्देश्य",
-        "kn": "ಸಾಲದ ಉದ್ದೇಶ"
-      },
-      "prompt": {
-        "en": "What will you use the loan for?",
-        "hi": "आप ऋण का उपयोग किसलिए करेंगे?",
-        "kn": "ನೀವು ಸಾಲವನ್ನು ಯಾವುದಕ್ಕೆ ಬಳಸುತ್ತೀರಿ?"
+        "en": "May we send you updates about your application on WhatsApp? Please say yes or no.",
+        "hi": "क्या हम आपके आवेदन की जानकारी आपको व्हाट्सऐप पर भेज सकते हैं? कृपया हाँ या नहीं बोलें।",
+        "kn": "ನಿಮ್ಮ ಅರ್ಜಿಯ ಮಾಹಿತಿಯನ್ನು ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿ ಕಳುಹಿಸಬಹುದೇ? ದಯವಿಟ್ಟು ಹೌದು ಅಥವಾ ಇಲ್ಲ ಎಂದು ಹೇಳಿ."
       }
     }
   ]

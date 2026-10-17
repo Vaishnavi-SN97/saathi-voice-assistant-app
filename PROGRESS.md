@@ -2,19 +2,41 @@
 
 - [x] P0 scaffold
 - [x] P1 server base (Firebase admin, auth, audit, status transitions, FileStore, media/TTS cache, MOCK_AI, POST /applications, firestore.rules, set-banker-claim)
-- [x] P2 voice (sarvam stt/tts/translate, audio-convert, scam shield, /voice/stt, /tts)
-- [x] P3 interview (gemini extractor, interview-engine, /interview/answer + /confirm; status draft -> docs_pending)
+- [x] P2 voice (Sarvam stt/tts/translate, audio-convert, scam shield, /voice/stt, /tts)
+- [x] P3 interview (Gemini extractor, interview-engine, /interview/answer + /confirm, last field -> docs_pending)
+- [x] Align P0-P3 with SPEC.md (below)
+- [ ] P4 validators, matcher, readiness
 
-## Needs native-speaker check (server/data/form.json)
-Machine-written; all Hindi (`hi`) and Kannada (`kn`) strings need review:
-- consent text (hi, kn)
-- full_name, occupation, monthly_income, loan_amount, loan_purpose prompts (hi, kn)
-Watch: formal vs informal "you" (आप / ನೀವು), the word for "loan" (ऋण vs लोन; ಸಾಲ), and "rupees" phrasing.
+## Aligned with SPEC.md (changed)
+- Sarvam: STT `saaras:v4` + `mode=transcribe`; TTS `bulbul:v3`, `language_code`, speaker `priya`, `output_audio_codec=mp3` (audio/mpeg); translate `source_language_code=auto`, no model. All verified live in en-IN, hi-IN, kn-IN.
+- Language: `application.language` is stored as `hi-IN|kn-IN|en-IN`; the API accepts `hi` or `hi-IN`.
+- Scam shield: any of OTP, PIN, CVV, password, passcode, MPIN, UPI PIN, "card number" (+ ओटीपी/पिन/पासवर्ड, ಒಟಿಪಿ/ಪಿನ್/ಪಾಸ್‌ವರ್ಡ್) blocks, alone or with 4-6 digits; 13-19 digit runs block. Blocked: nothing stored, `metrics.scamBlocks++`, audit without content, warning text + audio. Removed my extra "warn" level and the 12-digit Aadhaar block.
+- Storage: `applications/{id}/files/{aadhaar|pan|passbook|signature|pdf}`, images max 1280 px, JPEG q70, < 900 KB. Media id = `sha1(text+lang+voice)` (pace appended only when not 1), 10-minute token on GET /media/:id. Owner field is `customerUid` (was ownerUid); role name `customer` (was applicant).
+- Audit moved to `applications/{id}/audit {at, actor, action, detail}` (was a top-level collection).
+- Statuses now exactly the SPEC flow (draft, docs_pending, needs_fix, ready_for_review, approved, sent_back, signed).
+- Form: the SPEC savings-account form (full_name, dob, mobile, address, occupation, nominee_name, nominee_relation, notify_consent) replaced my placeholder loan questions. Answers are `{value, valueEn, confidence, confirmed}`; Gemini returns value + English transliteration + confidence; confidence < 0.6 or invalid -> max 2 retries, then typing offer. Consent is `{at, version}`; `metrics.startedAt` is set at creation; `notify.{phone,consent}` is filled from mobile + notify_consent.
+- Env names now match SPEC (PORT 8080, PUBLIC_API_URL, FIREBASE_CLIENT_EMAIL/PRIVATE_KEY, QR_JWT_SECRET, ...). Replaced JWT_SECRET and FIREBASE_SERVICE_ACCOUNT_JSON. `server/.env` was cleaned in place (quotes, duplicates, private-key fragment); old copy at `server/.env.bak` (gitignored, delete when happy). Firebase credentials verified to reach Firestore.
+- Gemini: on 429 retry once, then GEMINI_API_KEY_BACKUP; other errors fail fast (SPEC).
+
+## Kept (differs from SPEC, works)
+- Extra optional env `JSON_LIMIT`: the body-size limit needs a knob.
+- Default Gemini model `gemini-3.8-flash` when GEMINI_MODEL is empty: `gemini-2.5-flash` returned 404 for this key.
+- Media tokens are signed with QR_JWT_SECRET plus a `typ:"media"` claim: SPEC lists no second secret.
+- Mock TTS returns a silent WAV under voice name `mock`: keeps mock audio out of the real cache.
+- Extra `interview.attempts` counter on the application doc: retries must survive between requests.
+- "pin code" / "pincode" / पिन कोड / ಪಿನ್ ಕೋಡ್ are not treated as a PIN: the address answer would otherwise be blocked.
+- Yes/no word lists are supersets of SPEC's (extra colloquial words).
+- `form.json` uses `fields` (not `questions`) and carries `label` + `options` per field.
+- Non-image uploads >= 900 KB are rejected (e.g. an oversized pdf).
+
+## Needs native-speaker check (all hi / kn text is machine-written)
+- `server/data/form.json`: consent text; every field label, prompt and option label (occupation: सेवानिवृत्त/गृहिणी/किसान/व्यापार/नौकरीपेशा/अन्य; ನಿವೃತ್ತ/ಗೃಹಿಣಿ/ರೈತ/ವ್ಯಾಪಾರ/ಉದ್ಯೋಗಿ/ಇತರೆ; relation: पति/पत्नी, बेटा, बेटी; ಪತಿ/ಪತ್ನಿ, ಮಗ, ಮಗಳು).
+- `server/src/services/interview-engine.ts`: read-back sentences, "didn't catch that", "say yes or no", "let's type it", Yes/No words.
+- `server/src/services/scam-shield.ts`: scam warning (hi, kn). SPEC's English wording is exact; the translations are mine.
+- `server/src/services/yesno.ts`: hi/kn yes/no word lists (colloquial variants may be missing).
+- Watch: formal vs informal "you" (आप / ನೀವು), "whatsapp" spelling (व्हाट्सऐप / ವಾಟ್ಸಾಪ್), how dates and digits are read aloud.
 
 ## Notes
-- `server/.env` holds real keys (gitignored). The keys were pasted in plain text into an example file - rotate them if that file was ever shared.
-- `.env` values need cleaning before real use: stray quotes/spaces (`MOCK_AI= true`, `SARVAM_API_KEY= "..."`), FIREBASE_PRIVATE_KEY is a JSON fragment, TWILIO_WHATSAPP_FROM must be `whatsapp:+91...`, and duplicate CORS_ORIGINS/MOCK_AI lines.
-
-## More strings needing a native check (interview-engine.ts, data/form.json)
-- Field labels (hi, kn), read-back sentences, retry / "say yes or no" / "let's type it" messages (hi, kn).
-- Scam-shield warning (hi, kn). Yes/no word lists for hi/kn (colloquial variants may be missing).
+- `server/.env` holds real keys (gitignored). They were once pasted in plain text into an example file: rotate if that file was ever shared.
+- `TWILIO_WHATSAPP_FROM` is empty: the old value was not a number. SPEC wants just the sender number, e.g. `+14155238886` (sandbox), since the code adds the `whatsapp:` prefix.
+- `MOCK_AI=true` is set in the local `.env` (SPEC default is false).

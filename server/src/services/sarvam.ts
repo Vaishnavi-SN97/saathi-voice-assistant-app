@@ -2,15 +2,16 @@ import axios from "axios";
 import FormData from "form-data";
 import type { Ai } from "../ai/index.js";
 import { AppError } from "../errors.js";
-import type { Lang } from "../form.js";
+import { CODES, type Lang } from "../form.js";
 import type { TtsCache } from "../mediaStore.js";
 
 const BASE = "https://api.sarvam.ai";
-/** "ritu" is a female Bulbul v3 voice that supports hi-IN, kn-IN and en-IN. */
-export const VOICE = "ritu";
-export const CODES: Record<Lang, string> = { en: "en-IN", hi: "hi-IN", kn: "kn-IN" };
+/** SPEC example voice; verified to work for hi-IN, kn-IN and en-IN with bulbul:v3. */
+export const VOICE = "priya";
 
-export function createSarvam(apiKey: string | undefined): Ai & { translate(text: string, from: Lang, to: Lang): Promise<string> } {
+export type Sarvam = Ai & { translate(text: string, to: Lang): Promise<string> };
+
+export function createSarvam(apiKey: string | undefined): Sarvam {
   if (!apiKey) throw new Error("SARVAM_API_KEY is not set (or use MOCK_AI=true)");
   const headers = { "api-subscription-key": apiKey };
   const fail = (e: unknown): never => {
@@ -19,12 +20,14 @@ export function createSarvam(apiKey: string | undefined): Ai & { translate(text:
   };
 
   return {
+    voice: VOICE,
     async stt(wav, lang) {
       try {
         const fd = new FormData();
         fd.append("file", wav, { filename: "audio.wav", contentType: "audio/wav" });
-        fd.append("model", "saarika:v2.5");
-        fd.append("language_code", lang ? CODES[lang] : "unknown");
+        fd.append("model", "saaras:v4");
+        fd.append("mode", "transcribe");
+        if (lang) fd.append("language_code", CODES[lang]);
         const r = await axios.post(`${BASE}/speech-to-text`, fd, { headers: { ...headers, ...fd.getHeaders() }, timeout: 30000 });
         return String(r.data.transcript ?? "");
       } catch (e) { return fail(e); }
@@ -33,17 +36,17 @@ export function createSarvam(apiKey: string | undefined): Ai & { translate(text:
       try {
         const r = await axios.post(
           `${BASE}/text-to-speech`,
-          { text, target_language_code: CODES[lang], speaker: VOICE, model: "bulbul:v3", pace, speech_sample_rate: 16000 },
+          { text, language_code: CODES[lang], model: "bulbul:v3", speaker: VOICE, pace, output_audio_codec: "mp3" },
           { headers, timeout: 30000 },
         );
-        return { audio: Buffer.from(r.data.audios[0], "base64"), mime: "audio/wav" };
+        return { audio: Buffer.from(r.data.audios[0], "base64"), mime: "audio/mpeg" };
       } catch (e) { return fail(e); }
     },
-    async translate(text, from, to) {
+    async translate(text, to) {
       try {
         const r = await axios.post(
           `${BASE}/translate`,
-          { input: text, source_language_code: CODES[from], target_language_code: CODES[to], model: "mayura:v1", mode: "formal" },
+          { input: text, source_language_code: "auto", target_language_code: CODES[to] },
           { headers, timeout: 30000 },
         );
         return String(r.data.translated_text ?? "");
@@ -52,11 +55,11 @@ export function createSarvam(apiKey: string | undefined): Ai & { translate(text:
   };
 }
 
-/** Synthesize once per (lang, pace, text); returns the media id. */
+/** Synthesize once per (text, lang, voice, pace); returns the media id. */
 export async function ttsCached(ai: Ai, cache: TtsCache, text: string, lang: Lang, pace = 1): Promise<string> {
-  const key = pace === 1 ? lang : `${lang}@${pace}`;
-  const hit = await cache.lookup(key, text);
+  const code = CODES[lang];
+  const hit = await cache.lookup(text, code, ai.voice, pace);
   if (hit) return hit;
   const t = await ai.tts(text, lang, pace);
-  return cache.save(key, text, t.audio, t.mime);
+  return cache.save(text, code, ai.voice, t.audio, t.mime, pace);
 }
