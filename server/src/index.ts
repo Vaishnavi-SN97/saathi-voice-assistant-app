@@ -12,7 +12,11 @@ if (env.QR_JWT_SECRET === "dev-only-secret-change-me" && !/localhost|127.0.0.1/.
 }
 const deps = firebaseDeps(env);
 const app = createApp({ env, ...deps });
-app.listen(env.PORT, () => console.log(`saathi server on :${env.PORT} (MOCK_AI=${env.MOCK_AI}, NOTIFY_MODE=${env.NOTIFY_MODE})`));
+app.listen(env.PORT, "0.0.0.0", () => {
+  console.log(
+    `saathi server on :${env.PORT} (MOCK_AI=${env.MOCK_AI}, NOTIFY_MODE=${env.NOTIFY_MODE})`
+  );
+});
 
 // Retention cleanup (ID photos after signing, abandoned applications): once after start-up, then every 6 hours.
 if (env.RETENTION === "on") {
