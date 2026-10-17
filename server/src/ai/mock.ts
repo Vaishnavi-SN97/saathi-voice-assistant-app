@@ -10,4 +10,4 @@ export function mockTts(_text: string, _lang: string): Buffer {
   return b;
 }
 
-export const mockTranscribe = async (_audio: Buffer, _lang: string) => "mock transcript";
+export const mockStt = async (_wav: Buffer, _lang?: string) => "mock transcript";

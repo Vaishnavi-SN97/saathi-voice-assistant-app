@@ -2,6 +2,7 @@
 
 - [x] P0 scaffold
 - [x] P1 server base (Firebase admin, auth, audit, status transitions, FileStore, media/TTS cache, MOCK_AI, POST /applications, firestore.rules, set-banker-claim)
+- [x] P2 voice (sarvam stt/tts/translate, audio-convert, scam shield, /voice/stt, /tts)
 
 ## Needs native-speaker check (server/data/form.json)
 Machine-written; all Hindi (`hi`) and Kannada (`kn`) strings need review:

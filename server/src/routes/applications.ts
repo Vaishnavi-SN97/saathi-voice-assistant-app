@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Ctx } from "../app.js";
 import { audit } from "../audit.js";
 import { form, LANGS, type Lang } from "../form.js";
+import { ttsCached } from "../services/sarvam.js";
 
 const createBody = z.object({
   language: z.enum(LANGS),
@@ -31,11 +32,7 @@ export const applicationsRouter = ({ store, media, ai, ttsCache }: Ctx) =>
       await audit(store, user, "consent.given", id, { formVersion: form.version });
 
       const text = q.prompt[lang];
-      let audioId = await ttsCache.lookup(lang, text);
-      if (!audioId) {
-        const t = await ai.tts(text, lang);
-        audioId = await ttsCache.save(lang, text, t.audio, t.mime);
-      }
+      const audioId = await ttsCached(ai, ttsCache, text, lang);
       res.status(201).json({
         id,
         status: "draft",

@@ -10,6 +10,7 @@ import { MediaStore, TtsCache } from "./mediaStore.js";
 import { applicationsRouter } from "./routes/applications.js";
 import { filesRouter } from "./routes/files.js";
 import { mediaRouter } from "./routes/media.js";
+import { ttsRouter, voiceRouter } from "./routes/voice.js";
 import type { Store } from "./store.js";
 
 export interface Deps {
@@ -40,6 +41,8 @@ export function createApp({ env, store, verifier, ai }: Deps) {
   app.use("/media", mediaRouter(ctx));
   const auth = requireAuth(verifier);
   app.use("/files", auth, filesRouter(ctx));
+  app.use("/voice", auth, voiceRouter(ctx));
+  app.use("/tts", auth, ttsRouter(ctx));
   app.use("/applications", auth, applicationsRouter(ctx));
 
   app.use((_req, res) => void res.status(404).json({ error: "Not found", code: "not_found" }));

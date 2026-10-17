@@ -10,6 +10,7 @@ const schema = z.object({
   FIREBASE_PROJECT_ID: z.string().optional(),
   FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
+  SARVAM_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof schema>;
