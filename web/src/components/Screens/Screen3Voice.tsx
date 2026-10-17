@@ -10,7 +10,7 @@ import {
 } from "../UIComponents";
 import { useI18n } from "../../lib/i18n";
 import { api, ApiError } from "../../lib/api";
-import { audioExt, canRecord, playUrl, startRecording, stopAudio, type RecordingHandle } from "../../lib/audio";
+import { AudioBlockedError, audioExt, canRecord, playUrl, startRecording, stopAudio, type RecordingHandle } from "../../lib/audio";
 import { toQuestion, useSession, type Question } from "../../lib/session";
 import { useSpokenError } from "../../lib/spokenError";
 import { speakServer } from "../../lib/speak";
@@ -75,9 +75,9 @@ export function Screen3Voice({
   const say = useCallback(
     (audioUrl: string | undefined, fallbackText: string) => {
       if (!audioUrl) return;
-      playUrl(audioUrl).catch((e: unknown) => {
-        if (e instanceof DOMException && e.name === "NotAllowedError") return; // user can tap "Listen again"
-        void speakServer(fallbackText, appLang ?? "en"); // stale link (10-minute token) or missing file: fresh /tts link, browser voice as last resort
+      playUrl(audioUrl, fallbackText).catch((e: unknown) => {
+        if (e instanceof AudioBlockedError) return; // the Replay button offers it
+        void speakServer(fallbackText, appLang ?? "en"); // stale link (10-minute token) or missing file: ask for a fresh one
       });
     },
     [appLang],

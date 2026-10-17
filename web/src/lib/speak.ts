@@ -1,7 +1,7 @@
 import type { Language } from "../types";
 import { speakText } from "../utils/speech";
 import { api } from "./api";
-import { playUrl } from "./audio";
+import { AudioBlockedError, playUrl } from "./audio";
 import { LANG_CODE } from "./i18n";
 
 /**
@@ -13,9 +13,9 @@ import { LANG_CODE } from "./i18n";
 export async function speakServer(text: string, lang: Language, pace = 1): Promise<void> {
   try {
     const r = await api<{ audioUrl: string }>("/tts", { json: { text: text.slice(0, 600), language: lang, pace } });
-    await playUrl(r.audioUrl);
+    await playUrl(r.audioUrl, text);
   } catch (e) {
-    if (e instanceof DOMException && e.name === "NotAllowedError") return; // autoplay blocked: the person can tap again
+    if (e instanceof AudioBlockedError) return; // the Replay button now offers it; do not fall back to a silent voice
     speakText(text, LANG_CODE[lang], pace < 1);
   }
 }

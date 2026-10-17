@@ -1,25 +1,123 @@
+import { useSyncExternalStore } from "react";
 import { absUrl } from "./api";
 
-let current: HTMLAudioElement | null = null;
+/* ==========================================================================
+   Playback
+   Mobile browsers (iOS Safari above all) only let a page play sound from an
+   <audio> element that the person has already started once, inside a real tap.
+   Fetching the sentence from /tts is an await, and by the time it resolves the
+   tap is over, so a freshly created Audio() is refused and the app goes silent.
+   The cure: ONE element, started during the first tap with a silent clip. After
+   that it may be given new sources and played at any time.
+   ========================================================================== */
 
-export function stopAudio() {
-  if (current) {
-    current.pause();
-    current = null;
+/** 0.05 s of silence: starting this inside a tap is what unlocks the element. */
+const SILENCE =
+  "data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YSADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
+
+let element: HTMLAudioElement | null = null;
+let unlocked = false;
+
+const audioElement = () => (element ??= Object.assign(new Audio(), { preload: "auto" as const }));
+
+/** Thrown when the browser refuses to play without a fresh tap. */
+export class AudioBlockedError extends Error {
+  constructor() {
+    super("The browser blocked audio until the person taps the page");
   }
 }
 
-/** Plays server audio (resolves when it ends). Rejects if the browser blocks autoplay or the file fails. */
-export function playUrl(url: string): Promise<void> {
-  stopAudio();
-  const audio = new Audio(absUrl(url));
-  current = audio;
-  return new Promise((resolve, reject) => {
-    audio.onended = () => resolve();
-    audio.onerror = () => reject(new Error("audio failed"));
-    audio.play().catch(reject);
+/** Start the shared element inside a user gesture so later playback is allowed. Safe to call repeatedly. */
+export function unlockAudio(): void {
+  if (unlocked) return;
+  const a = audioElement();
+  a.src = SILENCE;
+  a.muted = true;
+  a.play()
+    .then(() => {
+      a.pause();
+      a.currentTime = 0;
+      a.muted = false;
+      unlocked = true;
+      stopListening();
+    })
+    .catch(() => {
+      a.muted = false; // not a tap after all; try again on the next one
+    });
+}
+
+const EVENTS = ["pointerdown", "touchend", "click", "keydown"] as const;
+const onFirstTap = () => unlockAudio();
+function stopListening() {
+  for (const ev of EVENTS) document.removeEventListener(ev, onFirstTap, true);
+}
+if (typeof document !== "undefined") {
+  for (const ev of EVENTS) document.addEventListener(ev, onFirstTap, true);
+}
+
+/* ---------- what is waiting to be heard ---------- */
+
+export interface PendingAudio { url: string; text: string }
+let pending: PendingAudio | null = null;
+const watchers = new Set<() => void>();
+const announce = () => watchers.forEach((w) => w());
+
+const subscribe = (w: () => void) => { watchers.add(w); return () => void watchers.delete(w); };
+
+/** The sentence the browser refused to play, so a screen can offer a Replay button next to the text. */
+export const useBlockedAudio = (): PendingAudio | null => useSyncExternalStore(subscribe, () => pending, () => null);
+
+export function clearBlockedAudio() {
+  if (!pending) return;
+  pending = null;
+  announce();
+}
+
+export function stopAudio() {
+  if (element) {
+    element.pause();
+    element.src = "";
+  }
+}
+
+/**
+ * Plays server audio on the shared element. Resolves when it ends.
+ * Throws AudioBlockedError if the browser refuses; the sentence is then remembered for a Replay button.
+ */
+export function playUrl(url: string, text = ""): Promise<void> {
+  const a = audioElement();
+  a.pause();
+  a.src = absUrl(url);
+  a.currentTime = 0;
+  return new Promise<void>((resolve, reject) => {
+    a.onended = () => resolve();
+    a.onerror = () => reject(new Error("audio failed to load"));
+    a.play()
+      .then(() => {
+        if (pending) clearBlockedAudio();
+        unlocked = true;
+      })
+      .catch((e: unknown) => {
+        if (e instanceof DOMException && e.name === "NotAllowedError") {
+          pending = { url, text };
+          announce();
+          reject(new AudioBlockedError());
+        } else reject(e as Error);
+      });
   });
 }
+
+/** Replay from a button press (a real gesture), which also unlocks the element for later. */
+export async function replayBlocked(): Promise<void> {
+  const item = pending;
+  if (!item) return;
+  clearBlockedAudio();
+  await playUrl(item.url, item.text).catch(() => undefined);
+}
+
+/* ==========================================================================
+   Recording (microphone)
+   ========================================================================== */
 
 export interface RecordingHandle {
   /** Stop early (tap to stop). */

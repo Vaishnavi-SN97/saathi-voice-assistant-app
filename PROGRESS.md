@@ -56,6 +56,13 @@
 - New test file `server/src/fix-dob-display.test.ts` (4 cases): month-name dates in 3 languages, and the WhatsApp text-only fallback. `src/p3.test.ts` updated for the new date format.
 - NOT fixed, blocked: document reading (Aadhaar/PAN capture) needs Gemini, and the free key is at its daily cap (429 RESOURCE_EXHAUSTED, ~12 h to reset, limit 20 requests/day). Fill `GEMINI_API_KEY_BACKUP` with a second key to double it, or wait for the reset. Everything else on that screen works.
 
+## Voice playback fix (browser autoplay)
+- Sarvam itself was never the problem: `npm run tts-test` calls the endpoint directly and hi-IN, kn-IN, en-IN all return real mp3 (model bulbul:v3, speaker priya, those exact language codes are valid). Saved samples land in server/assets/tts-check (git-ignored).
+- REAL CAUSE of "text shows, no audio": the web created a NEW Audio() for every sentence and called play() after awaiting /tts. Mobile browsers (iOS Safari in particular) only allow playback on an element the person has already started inside a tap, and the await ends that tap, so play() was refused with NotAllowedError, which the code then swallowed.
+- Fix in web/src/lib/audio.ts: ONE shared <audio> element, unlocked with a 0.05 s silent clip on the first pointerdown/touch/click/keydown anywhere in the page, then re-used for every sentence. A refusal is no longer silent: it throws AudioBlockedError, the sentence is remembered, and a big teal "Tap to hear this" Replay button appears above the screen with the text (useBlockedAudio / replayBlocked).
+- Server route: /tts caches by text+lang+voice+pace and serves audio/mpeg through /media/:id; a Sarvam failure returns 502 {error,code}, never an empty 200. Added a guard so a 200 with under 1 KB of audio is treated as an upstream failure instead of being cached as silence.
+- Verified against the running server with MOCK_AI=false: en 29 KB, hi 49 KB, kn 44 KB, all audio/mpeg.
+
 ## Hindi / Kannada audio fix
 - Symptom: only English was audible. ROOT CAUSE: the first screens spoke through the BROWSER speech engine (`speakText`), not through Sarvam. Most devices ship English voices only, so hi-IN and kn-IN produced silence while en-IN worked. The language picker, the consent screen "Listen to this" and the help modal were all browser-voice.
 - Fix: those now call `speakServer()` (POST /tts -> Sarvam mp3, cached), with the browser voice kept only as a fallback when the server cannot be reached. `speakServer` also takes a pace, so the interview's "speak slower" no longer drops to the browser voice.

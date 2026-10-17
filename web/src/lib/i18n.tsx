@@ -194,6 +194,7 @@ const en = {
   serverDown: "Saathi's server is not answering. Please check that it is running.",
   themeDark: "Dark",
   themeLight: "Bright",
+  tapToHear: "Tap to hear this",
 };
 
 const hi: typeof en = {
@@ -388,6 +389,7 @@ const hi: typeof en = {
   serverDown: "साथी का सर्वर जवाब नहीं दे रहा। कृपया जाँचें कि वह चल रहा है।",
   themeDark: "गहरा",
   themeLight: "उजला",
+  tapToHear: "सुनने के लिए दबाएं",
 };
 
 const kn: typeof en = {
@@ -582,6 +584,7 @@ const kn: typeof en = {
   serverDown: "ಸಾಥಿಯ ಸರ್ವರ್ ಉತ್ತರಿಸುತ್ತಿಲ್ಲ. ಅದು ಚಾಲನೆಯಲ್ಲಿದೆಯೇ ಎಂದು ಪರಿಶೀಲಿಸಿ.",
   themeDark: "ಗಾಢ",
   themeLight: "ಪ್ರಕಾಶ",
+  tapToHear: "ಕೇಳಲು ಒತ್ತಿ",
 };
 
 export type Key = keyof typeof en;

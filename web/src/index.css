@@ -3597,3 +3597,19 @@ body {
 .mode-banner--demo { background: var(--warning-amber-light); color: var(--warning-amber); }
 .mode-banner--down { background: var(--error-red-light); color: var(--error-red); }
 .phone-app-switcher { justify-content: space-between; gap: 10px; }
+
+/* Replay offer: shown when the browser refuses to play until the page is tapped */
+.replay-banner {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  padding: 12px 16px; border: 0; border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--primary-teal-light); color: var(--primary-teal-dark);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.replay-icon {
+  flex: none; width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary-teal); color: #fff; font-size: 18px;
+}
+.replay-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.replay-copy strong { font-size: 16px; font-weight: 800; }
+.replay-copy span { font-size: 15px; line-height: 1.35; opacity: 0.85; }

@@ -39,7 +39,10 @@ export function createSarvam(apiKey: string | undefined): Sarvam {
           { text, language_code: CODES[lang], model: "bulbul:v3", speaker: VOICE, pace, output_audio_codec: "mp3" },
           { headers, timeout: 30000 },
         );
-        return { audio: Buffer.from(r.data.audios[0], "base64"), mime: "audio/mpeg" };
+        const audio = Buffer.from(r.data.audios?.[0] ?? "", "base64");
+        // A 200 with no real audio would otherwise be cached as silence and look like "the voice is broken".
+        if (audio.length < 1024) throw new Error(`empty audio for ${CODES[lang]} (${audio.length} bytes)`);
+        return { audio, mime: "audio/mpeg" };
       } catch (e) { return fail(e); }
     },
     async translate(text, to) {

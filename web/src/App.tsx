@@ -14,6 +14,7 @@ import { ComponentShowcase } from "./components/ComponentShowcase";
 import { Icon } from "./components/Icons";
 import { LanguageSwitcher, useI18n } from "./lib/i18n";
 import { speakServer } from "./lib/speak";
+import { replayBlocked, useBlockedAudio } from "./lib/audio";
 import { useServerMode } from "./lib/serverMode";
 import { ThemeToggle } from "./lib/theme";
 import { useSession } from "./lib/session";
@@ -48,6 +49,7 @@ export function App() {
   const { lang, t } = useI18n();
   const session = useSession();
   const mode = useServerMode();
+  const blockedAudio = useBlockedAudio();
 
   // Phones get the app full screen; wider screens keep the design-preview device frame.
   const isPhone = useMediaQuery("(max-width: 520px)");
@@ -149,6 +151,17 @@ export function App() {
     : mode?.mockAi
       ? { kind: "demo" as const, title: t("demoTitle"), body: t("demoBody") }
       : null;
+  // The browser refuses to play sound until the page has been tapped: offer the sentence with a Replay button
+  // instead of staying silent (this is what iOS Safari does on the very first screen).
+  const replay = blockedAudio && (
+    <button type="button" className="replay-banner" onClick={() => void replayBlocked()}>
+      <span className="replay-icon" aria-hidden="true">▶</span>
+      <span className="replay-copy">
+        <strong>{t("tapToHear")}</strong>
+        {blockedAudio.text && <span>{blockedAudio.text}</span>}
+      </span>
+    </button>
+  );
   const banner = notice && (
     <div className={`mode-banner mode-banner--${notice.kind}`} role="status">
       <strong>{notice.title}</strong>
@@ -164,6 +177,7 @@ export function App() {
           {themeSwitch}
         </div>
         {banner}
+        {replay}
         <div className="phone-app-screen">{routes}</div>
         {helpModal}
       </div>
@@ -196,6 +210,7 @@ export function App() {
       </header>
 
       {banner}
+      {replay}
       <main className="main-content-layout">
         {viewMode === "prototype" && (
           <div className="prototype-interactive-stage">
