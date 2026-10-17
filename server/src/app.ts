@@ -53,7 +53,17 @@ export function createApp(deps: Deps) {
 
   const app = express();
   app.use(helmet());
-  app.use(cors({ origin: env.CORS_ORIGINS.split(",").map((s) => s.trim()).filter(Boolean) }));
+  app.use(
+  cors({
+    origin: [
+      "https://saathi-voice-assistant-app.onrender.com",
+      "http://localhost:5173",
+      ...env.CORS_ORIGINS.split(",").map((s) => s.trim()).filter(Boolean),
+    ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
   app.use(express.json({ limit: env.JSON_LIMIT }));
 
   app.get("/health", (_req, res) => void res.json({ ok: true, mockAi: env.MOCK_AI }));
