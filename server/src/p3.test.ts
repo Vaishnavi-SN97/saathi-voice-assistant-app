@@ -50,7 +50,7 @@ describe("validate + read-back", () => {
     assert.equal(validate(f("notify_consent"), "yes", now), null);
   });
   it("reads back in all three languages", () => {
-    assert.match(readBack(f("dob"), "1950-03-15", "en"), /15-03-1950/);
+    assert.match(readBack(f("dob"), "1950-03-15", "en"), /15 March 1950/); // month name: see fix-dob-display.test.ts
     assert.match(readBack(f("occupation"), "retired", "hi"), /सेवानिवृत्त/);
     assert.match(readBack(f("occupation"), "retired", "kn"), /ನಿವೃತ್ತ/);
     assert.match(readBack(f("mobile"), "9876543210", "en"), /9 8 7 6 5 4 3 2 1 0/);

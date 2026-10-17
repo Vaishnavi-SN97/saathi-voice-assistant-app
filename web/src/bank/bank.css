@@ -120,3 +120,25 @@
 .bank-tile-sub { font-size: 13px; color: var(--navy-muted, #53677d); }
 .bank-tile-demo { align-self: flex-start; margin-top: 4px; }
 @media (max-width: 760px) { .bank-nav { margin-left: 0; order: 3; width: 100%; } .bank-header { flex-wrap: wrap; } }
+
+/* dark theme: the bank screens use plain white cards, so they need their own overrides */
+:root[data-theme="dark"] .bank-shell { background: #151b22; }
+:root[data-theme="dark"] .bank-header { background: var(--neu-bg); border-bottom-color: rgba(255, 255, 255, 0.08); }
+:root[data-theme="dark"] .bank-card,
+:root[data-theme="dark"] .bank-row,
+:root[data-theme="dark"] .bank-tile,
+:root[data-theme="dark"] .bank-login-card,
+:root[data-theme="dark"] .bank-tabs button {
+  background: var(--neu-bg); border-color: rgba(255, 255, 255, 0.1); color: var(--navy-text);
+}
+:root[data-theme="dark"] .bank-tabs button.active { background: var(--primary-teal); color: #06222a; }
+:root[data-theme="dark"] .bank-btn--primary { background: var(--primary-teal); color: #06222a; }
+:root[data-theme="dark"] .bank-btn--amber { background: var(--warning-amber); color: #2a1a05; }
+:root[data-theme="dark"] .bank-count { background: rgba(255, 255, 255, 0.12); }
+:root[data-theme="dark"] .bank-table th,
+:root[data-theme="dark"] .bank-table td { border-bottom-color: rgba(255, 255, 255, 0.1); }
+:root[data-theme="dark"] .bank-doc-image { background: #11171d; }
+:root[data-theme="dark"] .bank-chip { background: #2b3542; color: #d6e2ee; }
+:root[data-theme="dark"] .bank-conf { background: #13301f; color: #8ee0b2; }
+:root[data-theme="dark"] .bank-conf.conf-low { background: #3a2a12; color: #f0c07a; }
+/* the signature canvas stays white: the stored image must be dark ink on white */

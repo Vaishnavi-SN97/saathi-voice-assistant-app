@@ -84,14 +84,26 @@ const T = {
   no: { en: "No", hi: "नहीं", kn: "ಇಲ್ಲ" },
 } satisfies Record<string, Record<Lang, string>>;
 
+// Month names so a date is never ambiguous: "15 March 1950" can only be read one way, "15-03-1950" cannot.
+const MONTHS: Record<Lang, string[]> = {
+  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  hi: ["जनवरी", "फ़रवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"],
+  kn: ["ಜನವರಿ", "ಫೆಬ್ರವರಿ", "ಮಾರ್ಚ್", "ಏಪ್ರಿಲ್", "ಮೇ", "ಜೂನ್", "ಜುಲೈ", "ಆಗಸ್ಟ್", "ಸೆಪ್ಟೆಂಬರ್", "ಅಕ್ಟೋಬರ್", "ನವೆಂಬರ್", "ಡಿಸೆಂಬರ್"],
+};
+
+/** ISO date -> "day Month year" in the applicant's language (unchanged if it is not a plain ISO date). */
+export function formatDob(iso: string, lang: Lang): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  const month = MONTHS[lang][Number(m[2]) - 1];
+  return month ? `${Number(m[3])} ${month} ${m[1]}` : iso;
+}
+
 /** Display text for a value in the applicant's language. */
 export function display(f: Field, value: string | number | boolean, lang: Lang): string {
   if (f.type === "yesno") return value ? T.yes[lang] : T.no[lang];
   if (f.type === "choice") return f.options?.find((o) => o.value === value)?.label[lang] ?? String(value);
-  if (f.type === "date") {
-    const [y, m, d] = String(value).split("-");
-    return `${d}-${m}-${y}`;
-  }
+  if (f.type === "date") return formatDob(String(value), lang);
   if (f.type === "mobile") return String(value).split("").join(" "); // digits read one by one
   return String(value);
 }

@@ -47,6 +47,15 @@
 
 - [x] P13 wire web <-> server, one-command run, smoke test (14 steps, all PASS under MOCK_AI=true)
 
+## Bug fix round (after P13)
+- ROOT CAUSE of "Kannada/Hindi audio dead", "mic always says mock transcript" and "Aadhaar not detected": `MOCK_AI=true` was still set in `server/.env`. In that mode the voices are 0.1 s of silence, the microphone always returns the literal string "mock transcript", and documents are read from a QR printed on our own sample cards (a real Aadhaar photo reads as nothing). Set to `MOCK_AI=false`; verified live that Sarvam speaks and transcribes in hi-IN, kn-IN and en-IN.
+- So that this can never look broken again, both apps now show a banner when `GET /health` reports `mockAi: true` ("Demo mode: speech is simulated, please type") or when the server cannot be reached at all.
+- Bright / dark theme: the design already ran on CSS tokens, so dark mode redefines those tokens under `:root[data-theme="dark"]`, with a `prefers-color-scheme` fallback before JavaScript runs and overrides for the few hard-coded white surfaces (bank cards, inputs, the camera frame). A 48 px sun/moon switch sits beside the language switcher and in the bank header; the choice is remembered. The QR card and the signature canvas stay white on purpose (scannable / dark ink on white).
+- Dates are no longer ambiguous: the read-back card and the spoken line now say "15 March 1950" / "15 मार्च 1950" / "15 ಮಾರ್ಚ್ 1950" instead of "15-03-1950" (`formatDob` in interview-engine.ts). The PDF and the bank screens keep numeric dd/mm/yyyy, which is what a bank form expects.
+- WhatsApp: the Twilio settings in `server/.env` are now all valid. Twilio fetches the voice note / QR image itself, so with `PUBLIC_API_URL=http://localhost:8080` it could not reach them and rejected the whole message; the notifier now sends the text without the attachment in that case instead of failing. Media comes back automatically once PUBLIC_API_URL is the public (deployed) URL.
+- New test file `server/src/fix-dob-display.test.ts` (4 cases): month-name dates in 3 languages, and the WhatsApp text-only fallback. `src/p3.test.ts` updated for the new date format.
+- NOT fixed, blocked: document reading (Aadhaar/PAN capture) needs Gemini, and the free key is at its daily cap (429 RESOURCE_EXHAUSTED, ~12 h to reset, limit 20 requests/day). Fill `GEMINI_API_KEY_BACKUP` with a second key to double it, or wait for the reset. Everything else on that screen works.
+
 ## P13 decisions
 - Contract check: every call in `web/src` was compared with every route in `server/src`. No path, method, field-name, status-code or auth-header mismatch was found; the smoke test now exercises all 16 of them live. What WAS broken: `web/.env` did not exist at all (so the browser could never sign in or reach the API), there was no root `package.json`, and `firebaseDeps()` did not expose the Admin `auth` the smoke test needs.
 - `web/.env` was recovered from your own repo history (commit 596809c `web/.env.example`, before it was blanked) and written to the git-ignored `web/.env`: VITE_API_URL + the 4 VITE_FIREBASE_* values, all 5 confirmed present by key name only.

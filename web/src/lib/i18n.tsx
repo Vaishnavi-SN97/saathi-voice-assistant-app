@@ -189,6 +189,11 @@ const en = {
   doneTitle: "Your application is signed",
   doneBody: "Thank you! The bank has your signed form. They will contact you on your mobile number if anything else is needed.",
   doneRestart: "Start a new form",
+  demoTitle: "Demo mode",
+  demoBody: "Speech is simulated: the microphone will not hear you and the voices are silent. Please type your answers, and use the printed sample documents.",
+  serverDown: "Saathi's server is not answering. Please check that it is running.",
+  themeDark: "Dark",
+  themeLight: "Bright",
 };
 
 const hi: typeof en = {
@@ -378,6 +383,11 @@ const hi: typeof en = {
   doneTitle: "आपके आवेदन पर हस्ताक्षर हो गए",
   doneBody: "धन्यवाद! बैंक के पास आपका हस्ताक्षरित फ़ॉर्म है। कुछ और चाहिए होगा तो वे आपके मोबाइल नंबर पर संपर्क करेंगे।",
   doneRestart: "नया फ़ॉर्म शुरू करें",
+  demoTitle: "डेमो मोड",
+  demoBody: "आवाज़ नकली है: माइक्रोफ़ोन आपकी बात नहीं सुनेगा और आवाज़ें बंद रहेंगी। कृपया जवाब लिखकर दें, और छपे हुए नमूना दस्तावेज़ इस्तेमाल करें।",
+  serverDown: "साथी का सर्वर जवाब नहीं दे रहा। कृपया जाँचें कि वह चल रहा है।",
+  themeDark: "गहरा",
+  themeLight: "उजला",
 };
 
 const kn: typeof en = {
@@ -567,6 +577,11 @@ const kn: typeof en = {
   doneTitle: "ನಿಮ್ಮ ಅರ್ಜಿಗೆ ಸಹಿ ಆಗಿದೆ",
   doneBody: "ಧನ್ಯವಾದ! ಬ್ಯಾಂಕ್ ಬಳಿ ನಿಮ್ಮ ಸಹಿ ಮಾಡಿದ ಫಾರ್ಮ್ ಇದೆ. ಇನ್ನೇನಾದರೂ ಬೇಕಾದರೆ ಅವರು ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಗೆ ಸಂಪರ್ಕಿಸುತ್ತಾರೆ.",
   doneRestart: "ಹೊಸ ಫಾರ್ಮ್ ಪ್ರಾರಂಭಿಸಿ",
+  demoTitle: "ಡೆಮೊ ಮೋಡ್",
+  demoBody: "ಧ್ವನಿ ನಕಲಿಯಾಗಿದೆ: ಮೈಕ್ರೊಫೋನ್ ನಿಮ್ಮ ಮಾತು ಕೇಳುವುದಿಲ್ಲ ಮತ್ತು ಧ್ವನಿಗಳು ಮೌನವಾಗಿರುತ್ತವೆ. ದಯವಿಟ್ಟು ಉತ್ತರಗಳನ್ನು ಟೈಪ್ ಮಾಡಿ, ಮತ್ತು ಮುದ್ರಿತ ಮಾದರಿ ದಾಖಲೆಗಳನ್ನು ಬಳಸಿ.",
+  serverDown: "ಸಾಥಿಯ ಸರ್ವರ್ ಉತ್ತರಿಸುತ್ತಿಲ್ಲ. ಅದು ಚಾಲನೆಯಲ್ಲಿದೆಯೇ ಎಂದು ಪರಿಶೀಲಿಸಿ.",
+  themeDark: "ಗಾಢ",
+  themeLight: "ಪ್ರಕಾಶ",
 };
 
 export type Key = keyof typeof en;

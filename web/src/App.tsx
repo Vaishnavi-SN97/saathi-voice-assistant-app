@@ -14,6 +14,8 @@ import { ComponentShowcase } from "./components/ComponentShowcase";
 import { Icon } from "./components/Icons";
 import { speakText } from "./utils/speech";
 import { LANG_CODE, LanguageSwitcher, useI18n } from "./lib/i18n";
+import { useServerMode } from "./lib/serverMode";
+import { ThemeToggle } from "./lib/theme";
 import { useSession } from "./lib/session";
 
 /** The 8 customer screens, in order. */
@@ -45,6 +47,7 @@ export function App() {
   const { pathname } = useLocation();
   const { lang, t } = useI18n();
   const session = useSession();
+  const mode = useServerMode();
 
   // Phones get the app full screen; wider screens keep the design-preview device frame.
   const isPhone = useMediaQuery("(max-width: 520px)");
@@ -138,11 +141,29 @@ export function App() {
 
   // The language switcher only makes sense before the interview language is fixed.
   const switcher = (pathname === "/" || pathname === "/consent") && <LanguageSwitcher />;
+  const themeSwitch = <ThemeToggle labels={{ light: t("themeLight"), dark: t("themeDark") }} />;
+
+  // Canned AI (or no server at all) must be visible: otherwise the microphone looks broken instead of switched off.
+  const notice = mode && !mode.reachable
+    ? { kind: "down" as const, title: t("serverDown"), body: "" }
+    : mode?.mockAi
+      ? { kind: "demo" as const, title: t("demoTitle"), body: t("demoBody") }
+      : null;
+  const banner = notice && (
+    <div className={`mode-banner mode-banner--${notice.kind}`} role="status">
+      <strong>{notice.title}</strong>
+      {notice.body && <span>{notice.body}</span>}
+    </div>
+  );
 
   if (isPhone) {
     return (
       <div className="phone-app">
-        {switcher && <div className="phone-app-switcher">{switcher}</div>}
+        <div className="phone-app-switcher">
+          {switcher}
+          {themeSwitch}
+        </div>
+        {banner}
         <div className="phone-app-screen">{routes}</div>
         {helpModal}
       </div>
@@ -171,8 +192,10 @@ export function App() {
           <Tab active={viewMode === "components"} onClick={() => setViewMode("components")} icon="document">Component Set</Tab>
         </nav>
         <LanguageSwitcher />
+        {themeSwitch}
       </header>
 
+      {banner}
       <main className="main-content-layout">
         {viewMode === "prototype" && (
           <div className="prototype-interactive-stage">

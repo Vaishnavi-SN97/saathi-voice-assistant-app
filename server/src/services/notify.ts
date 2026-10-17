@@ -80,15 +80,20 @@ export class Notifier {
     if (!this.send) return skip("no_credentials");
 
     const lang = toLang(app.language) ?? "en";
+    // Twilio downloads the voice note / QR image itself, so PUBLIC_API_URL must be reachable from the internet.
+    // On a laptop it is localhost: attaching it would make Twilio reject the whole message, so send the text alone.
+    const publicApi = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:|\/|$)/i.test(this.env.PUBLIC_API_URL) ? null : this.env.PUBLIC_API_URL.replace(/\/$/, "");
+    const withMedia = Boolean(extra.mediaId && publicApi);
     const msg: WhatsAppMessage = {
       from: `whatsapp:${this.env.TWILIO_WHATSAPP_FROM!.replace(/^whatsapp:/, "")}`,
       to: `whatsapp:+91${phone}`,
       body: messageText(event, lang, extra.note),
-      ...(extra.mediaId ? { mediaUrl: [this.env.PUBLIC_API_URL.replace(/\/$/, "") + this.media.url(extra.mediaId)] } : {}),
+      ...(withMedia ? { mediaUrl: [publicApi + this.media.url(extra.mediaId!)] } : {}),
     };
+    if (extra.mediaId && !withMedia) console.warn(`notify: sending ${event} without audio/QR because PUBLIC_API_URL is not reachable from the internet`);
     try {
       await this.send(msg);
-      await audit(this.store, "system", "notify.sent", appId, { event, media: !!extra.mediaId });
+      await audit(this.store, "system", "notify.sent", appId, { event, media: withMedia });
       return { sent: true };
     } catch (e) {
       console.error("WhatsApp send failed:", (e as Error).message);

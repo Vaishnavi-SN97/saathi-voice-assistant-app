@@ -5,10 +5,13 @@ import { BankDetail } from "./Detail";
 import { BankLogin } from "./Login";
 import { BankMetrics } from "./Metrics";
 import { BankQueue } from "./Queue";
+import { useServerMode } from "../lib/serverMode";
+import { ThemeToggle } from "../lib/theme";
 import { logoutBanker, useBankAuth } from "./firebase";
 import "./bank.css";
 
 function Shell({ email, children }: { email?: string; children: ReactNode }) {
+  const mode = useServerMode();
   return (
     <div className="bank-shell">
       <header className="bank-header">
@@ -27,6 +30,7 @@ function Shell({ email, children }: { email?: string; children: ReactNode }) {
         )}
         {email && (
           <div className="bank-user">
+            <ThemeToggle />
             <span>{email}</span>
             <button type="button" className="bank-btn bank-btn--ghost" onClick={() => void logoutBanker()}>
               Sign out
@@ -34,6 +38,8 @@ function Shell({ email, children }: { email?: string; children: ReactNode }) {
           </div>
         )}
       </header>
+      {mode && !mode.reachable && <div className="mode-banner mode-banner--down" role="status"><strong>The Saathi server is not answering.</strong></div>}
+      {mode?.mockAi && <div className="mode-banner mode-banner--demo" role="status"><strong>Demo mode</strong><span>The server is running on canned AI (MOCK_AI=true): documents are read from the printed sample cards only.</span></div>}
       <main className="bank-main">{children}</main>
     </div>
   );

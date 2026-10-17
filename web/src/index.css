@@ -3477,3 +3477,123 @@ body {
   min-height: 56px; border: 0; background: transparent; color: var(--primary-teal, #0c7680);
   font-size: 17px; font-weight: 800; text-decoration: underline; cursor: pointer;
 }
+
+/* ==========================================================================
+   FIX: BRIGHT / DARK THEME
+   The whole design is built on the tokens in :root, so dark mode redefines
+   those tokens (plus the few surfaces that were hard-coded white).
+   `data-theme` is set by useTheme(); the media query is the pre-JavaScript
+   fallback so a dark phone never flashes a bright screen.
+   ========================================================================== */
+:root { color-scheme: light dark; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --neu-bg: #1c232c;
+    --neu-bg-light: #222a35;
+    --neu-bg-sunken: #161c24;
+    --neu-bg-card: #1c232c;
+    --neu-light: rgba(255, 255, 255, 0.05);
+    --neu-shadow: rgba(0, 0, 0, 0.55);
+    --neu-shadow-dark: rgba(0, 0, 0, 0.72);
+    --neu-shadow-ambient: rgba(0, 0, 0, 0.4);
+    --neu-bevel-light: 1px solid rgba(255, 255, 255, 0.08);
+    --neu-bevel-subtle: 1px solid rgba(255, 255, 255, 0.05);
+    --neu-bevel-inset: 1px solid rgba(0, 0, 0, 0.45);
+    --primary-teal: #2aa3ad;
+    --primary-teal-dark: #178790;
+    --primary-teal-light: #11323a;
+    --primary-teal-glow: rgba(42, 163, 173, 0.35);
+    --accent-saffron: #f08a3c;
+    --accent-saffron-dark: #c96a22;
+    --accent-saffron-light: #3a2616;
+    --navy-text: #eef3f8;
+    --navy-muted: #a8b6c5;
+    --navy-subtle: #8496a8;
+    --success-green: #3fb87a;
+    --success-green-light: #13301f;
+    --warning-amber: #f0a33c;
+    --warning-amber-light: #3a2a12;
+    --error-red: #ef6a5c;
+    --error-red-light: #3a1c18;
+  }
+}
+
+:root[data-theme="dark"] {
+  --neu-bg: #1c232c;
+  --neu-bg-light: #222a35;
+  --neu-bg-sunken: #161c24;
+  --neu-bg-card: #1c232c;
+  --neu-light: rgba(255, 255, 255, 0.05);
+  --neu-shadow: rgba(0, 0, 0, 0.55);
+  --neu-shadow-dark: rgba(0, 0, 0, 0.72);
+  --neu-shadow-ambient: rgba(0, 0, 0, 0.4);
+  --neu-bevel-light: 1px solid rgba(255, 255, 255, 0.08);
+  --neu-bevel-subtle: 1px solid rgba(255, 255, 255, 0.05);
+  --neu-bevel-inset: 1px solid rgba(0, 0, 0, 0.45);
+  --primary-teal: #2aa3ad;
+  --primary-teal-dark: #178790;
+  --primary-teal-light: #11323a;
+  --primary-teal-glow: rgba(42, 163, 173, 0.35);
+  --accent-saffron: #f08a3c;
+  --accent-saffron-dark: #c96a22;
+  --accent-saffron-light: #3a2616;
+  --navy-text: #eef3f8;
+  --navy-muted: #a8b6c5;
+  --navy-subtle: #8496a8;
+  --success-green: #3fb87a;
+  --success-green-light: #13301f;
+  --warning-amber: #f0a33c;
+  --warning-amber-light: #3a2a12;
+  --error-red: #ef6a5c;
+  --error-red-light: #3a1c18;
+}
+
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] .main-viewport-container {
+  background: radial-gradient(circle at 50% 0%, #232c37 0%, #1c232c 60%, #151b22 100%);
+  color: var(--navy-text);
+}
+:root[data-theme="dark"] .primary-btn,
+:root[data-theme="dark"] .modal-close-primary-btn {
+  background: linear-gradient(145deg, #2aa3ad 0%, #146c74 100%);
+  color: #06222a;
+}
+/* a white card would glare; the QR itself keeps its own white background so it still scans */
+:root[data-theme="dark"] .huge-qr-card-container,
+:root[data-theme="dark"] .what-to-carry-card,
+:root[data-theme="dark"] .mini-doc-item {
+  background: var(--neu-bg-light);
+  color: var(--navy-text);
+}
+:root[data-theme="dark"] .name-text-input,
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] textarea {
+  background: var(--neu-bg-sunken);
+  color: var(--navy-text);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+:root[data-theme="dark"] .camera-viewfinder-frame { background: radial-gradient(circle at 50% 30%, #2b3640 0%, #11171d 100%); }
+
+/* ==========================================================================
+   FIX: theme switch + "demo mode" banner
+   ========================================================================== */
+.theme-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 48px; padding: 0 16px; border-radius: 999px;
+  border: var(--neu-bevel-light); background: var(--neu-bg);
+  box-shadow: var(--shadow-neu-raised-sm);
+  color: var(--navy-text); font-size: 15px; font-weight: 800; cursor: pointer;
+}
+.theme-toggle:active { box-shadow: var(--shadow-neu-inset-sm); }
+.theme-toggle span[aria-hidden] { font-size: 18px; line-height: 1; }
+
+.mode-banner {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 10px 16px; font-size: 15px; line-height: 1.4;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+.mode-banner strong { font-weight: 800; }
+.mode-banner--demo { background: var(--warning-amber-light); color: var(--warning-amber); }
+.mode-banner--down { background: var(--error-red-light); color: var(--error-red); }
+.phone-app-switcher { justify-content: space-between; gap: 10px; }
