@@ -16,6 +16,7 @@ import { checkRouter, documentsRouter } from "./routes/documents.js";
 import { lifecycleRouter } from "./routes/lifecycle.js";
 import { interviewRouter } from "./routes/interview.js";
 import { mediaRouter } from "./routes/media.js";
+import { metricsRouter } from "./routes/metrics.js";
 import { ttsRouter, voiceRouter } from "./routes/voice.js";
 import type { Store } from "./store.js";
 
@@ -63,6 +64,7 @@ export function createApp(deps: Deps) {
   app.use("/tts", auth, ttsRouter(ctx));
   app.use("/interview", auth, interviewRouter(ctx));
   app.use("/checkin", auth, checkinRouter(ctx));
+  app.use("/metrics", auth, metricsRouter(ctx));
   app.use("/documents", auth, documentsRouter(ctx));
   app.use("/applications", auth, checkRouter(ctx));
   app.use("/applications", auth, lifecycleRouter(ctx));

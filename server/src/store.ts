@@ -10,6 +10,8 @@ export interface Store {
   /** Create a doc with an auto id under a collection path; returns the id. */
   add(collection: string, data: Doc): Promise<string>;
   delete(path: string): Promise<void>;
+  /** Documents directly inside a collection (not their sub-collections), with ids. */
+  list(collection: string): Promise<{ id: string; data: Doc }[]>;
 }
 
 export class FirestoreStore implements Store {
@@ -28,6 +30,10 @@ export class FirestoreStore implements Store {
   async delete(path: string) {
     await this.db.doc(path).delete();
   }
+  async list(collection: string) {
+    const snap = await this.db.collection(collection).get();
+    return snap.docs.map((d) => ({ id: d.id, data: d.data() as Doc }));
+  }
 }
 
 export class MemoryStore implements Store {
@@ -45,5 +51,11 @@ export class MemoryStore implements Store {
   }
   async delete(path: string) {
     this.docs.delete(path);
+  }
+  async list(collection: string) {
+    const depth = collection.split("/").length + 1;
+    return [...this.docs.entries()]
+      .filter(([k]) => k.startsWith(collection + "/") && k.split("/").length === depth)
+      .map(([k, data]) => ({ id: k.split("/").pop()!, data }));
   }
 }

@@ -41,6 +41,14 @@
 
 - [x] P10 banker app under /bank: login, live queue, application detail, approve / send back
 
+- [x] P11 bank check-in (QR scan + paste, signature) and number tiles; server GET /metrics
+
+## P11 decisions
+- `/bank/checkin`: html5-qrcode camera scanner (falls back to a paste box when the camera is blocked/missing; a camera needs https or localhost) -> POST /checkin/verify -> customer summary + inline PDF -> signature_pad -> "Complete" calls POST /applications/:id/sign (QR consumed, PDF re-issued with the signature). Clear messages for used / expired / invalid QR and wrong status; verifying does not consume the QR, signing does.
+- `/bank/metrics`: number tiles only, refreshed every 30 s. GET /metrics is banker-only (`server/src/services/metrics.ts`, pure and tested): applications today (IST), first-visit approval rate (of applications that reached a decision, the share approved without ever being sent back; needs the new `metrics.sentBackCount`, counted from now on), average minutes from started to sent-to-bank vs `BASELINE_MANUAL_MINUTES` (default 30), mistakes caught, scam blocks.
+- "Demo data": rows with `demo: true` (P12's seed must set it) are counted by default and every tile is tagged "demo data" while any are included; a link switches to real data only (`?demo=exclude`).
+- Store gained `list(collection)` (direct documents only). `npm run decide -- <appId> token` prints an approved application's QR token for the paste test.
+
 ## P10 decisions
 - `/bank` (queue), `/bank/login`, `/bank/app/:id` live in `web/src/bank/`; `main.tsx` picks the banker app for any /bank path, the customer app otherwise. English only (bank staff), same colour tokens.
 - Separate Firebase app instance (`saathi-bank`) so a banker session never mixes with a customer's anonymous one in the same browser. Sign-in = Firebase email/password, then the `role=banker` custom claim is required (otherwise signed out with a clear message). Give an account the claim with `npm run set-banker -- <email>` in server/ (the person must sign in again). Email/Password sign-in must be enabled in the Firebase console.

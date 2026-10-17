@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
-import { Link, Navigate, Route, Routes } from "react-router-dom";
+import { Link, Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { BankCheckin } from "./Checkin";
 import { BankDetail } from "./Detail";
 import { BankLogin } from "./Login";
+import { BankMetrics } from "./Metrics";
 import { BankQueue } from "./Queue";
 import { logoutBanker, useBankAuth } from "./firebase";
 import "./bank.css";
@@ -16,6 +18,13 @@ function Shell({ email, children }: { email?: string; children: ReactNode }) {
             साथी <small>Saathi · Bank</small>
           </span>
         </Link>
+        {email && (
+          <nav className="bank-nav" aria-label="Bank sections">
+            <NavLink to="/bank" end>Queue</NavLink>
+            <NavLink to="/bank/checkin">Check-in</NavLink>
+            <NavLink to="/bank/metrics">Numbers</NavLink>
+          </nav>
+        )}
         {email && (
           <div className="bank-user">
             <span>{email}</span>
@@ -54,6 +63,8 @@ export function BankApp() {
       <Route path="/bank/login" element={<BankLogin />} />
       <Route path="/bank" element={<Guard>{() => <BankQueue />}</Guard>} />
       <Route path="/bank/app/:id" element={<Guard>{() => <BankDetail />}</Guard>} />
+      <Route path="/bank/checkin" element={<Guard>{() => <BankCheckin />}</Guard>} />
+      <Route path="/bank/metrics" element={<Guard>{() => <BankMetrics />}</Guard>} />
       <Route path="*" element={<Navigate to="/bank" replace />} />
     </Routes>
   );

@@ -3,6 +3,7 @@
 //   npm run decide -- <appId> send_back "English note"
 //   npm run decide -- <appId> sign          (marks it signed at the branch, with a sample signature)
 //   npm run decide -- <appId> show          (prints status only)
+//   npm run decide -- <appId> token         (prints the approved application's QR token: paste it into the bank check-in page)
 // The application must be in the right status (approve / send_back need ready_for_review, sign needs approved).
 import sharp from "sharp";
 import { createCtx } from "../src/app.js";
@@ -11,8 +12,8 @@ import { firebaseDeps } from "../src/firebase.js";
 import { approveApplication, sendBackApplication, signApplication } from "../src/routes/lifecycle.js";
 
 const [appId, action, ...rest] = process.argv.slice(2);
-if (!appId || !["approve", "send_back", "sign", "show"].includes(action ?? "")) {
-  console.error('Usage: npm run decide -- <appId> approve|send_back|sign|show ["note"]');
+if (!appId || !["approve", "send_back", "sign", "show", "token"].includes(action ?? "")) {
+  console.error('Usage: npm run decide -- <appId> approve|send_back|sign|show|token ["note"]');
   process.exit(1);
 }
 
@@ -38,6 +39,11 @@ try {
       .png().toBuffer();
     const r = await signApplication(ctx, "system", appId, app, sig);
     console.log(`signed at ${r.signedAt}`);
+  }
+  if (action === "token") {
+    if (!app.qr?.token) throw new Error("No QR token yet: the application must be approved first");
+    console.log(app.qr.usedAt ? "(already used)" : "QR token (valid until " + app.qr.expiresAt + "):");
+    console.log(app.qr.token);
   }
   console.log(`after:  status=${(await store.get(`applications/${appId}`))!.status}`);
 } catch (e) {

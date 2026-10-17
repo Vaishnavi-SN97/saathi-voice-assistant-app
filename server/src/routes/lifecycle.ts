@@ -70,6 +70,7 @@ export async function sendBackApplication(ctx: Ctx, actor: Actor, id: string, ap
     ...app,
     status: "sent_back",
     review: { decision: "sent_back", note, noteTranslated, at: now, by: actorId(actor) },
+    metrics: { ...(app.metrics ?? {}), sentBackCount: (app.metrics?.sentBackCount ?? 0) + 1 },
     updatedAt: now,
   };
   await ctx.store.set(`applications/${id}`, next);
