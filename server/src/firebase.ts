@@ -14,12 +14,14 @@ function init(env: Env) {
   return initializeApp({ credential, projectId: env.FIREBASE_PROJECT_ID });
 }
 
-export function firebaseDeps(env: Env): { store: FirestoreStore; verifier: TokenVerifier } {
+/** `auth` is the Admin Auth instance (claims, custom tokens): handy for scripts, unused by the routes. */
+export function firebaseDeps(env: Env): { store: FirestoreStore; verifier: TokenVerifier; auth: ReturnType<typeof getAuth> } {
   const app = init(env);
   const db = getFirestore(app);
   db.settings({ ignoreUndefinedProperties: true });
   const auth = getAuth(app);
   return {
+    auth,
     store: new FirestoreStore(db),
     verifier: async (token) => {
       const d = await auth.verifyIdToken(token);

@@ -10,6 +10,7 @@ import { speakText } from "../../utils/speech";
 import { LANG_CODE, useI18n } from "../../lib/i18n";
 import { api, ApiError } from "../../lib/api";
 import { toQuestion, useSession } from "../../lib/session";
+import { useSpokenError } from "../../lib/spokenError";
 
 interface CreateResponse {
   id: string;
@@ -31,6 +32,7 @@ export function Screen2Consent({
   const [showModal, setShowModal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useSpokenError(error, lang);
 
   const consentPoints = [
     { icon: "mic" as const, text: t("c1") },

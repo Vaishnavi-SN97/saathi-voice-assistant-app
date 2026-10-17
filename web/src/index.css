@@ -3452,3 +3452,28 @@ body {
   width: 112px; height: 112px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   background: var(--success-green); color: #fff; box-shadow: var(--shadow-neu-raised-lg);
 }
+
+/* ==========================================================================
+   P13: global crash screen (ErrorBoundary)
+   ========================================================================== */
+.crash-screen {
+  min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+  padding: calc(24px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));
+  background: var(--neu-bg, #ece7de);
+}
+.crash-card {
+  width: min(420px, 100%); display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
+  background: var(--neu-bg, #ece7de); border: var(--neu-bevel-light); border-radius: 24px; padding: 28px 24px;
+  box-shadow: var(--shadow-neu-raised-lg);
+}
+.crash-icon {
+  width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--warning-amber, #d97706); color: #fff; font-size: 40px; font-weight: 800;
+}
+.crash-card h1 { font-size: 26px; font-weight: 800; color: var(--navy-text, #132438); margin: 0; }
+.crash-card p { font-size: 18px; line-height: 1.5; color: var(--navy-muted, #53677d); margin: 0; }
+.crash-actions { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+.crash-home-btn {
+  min-height: 56px; border: 0; background: transparent; color: var(--primary-teal, #0c7680);
+  font-size: 17px; font-weight: 800; text-decoration: underline; cursor: pointer;
+}

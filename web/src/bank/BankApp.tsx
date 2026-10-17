@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link, Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { BankCheckin } from "./Checkin";
 import { BankDetail } from "./Detail";
 import { BankLogin } from "./Login";
@@ -42,10 +42,11 @@ function Shell({ email, children }: { email?: string; children: ReactNode }) {
 /** Only signed-in users with the role=banker claim get through. */
 function Guard({ children }: { children: (email: string) => ReactNode }) {
   const auth = useBankAuth();
+  const location = useLocation();
   if (auth.status === "notConfigured")
     return <Shell><p className="bank-notice bank-notice--warn">The app is not set up yet: Firebase keys (VITE_FIREBASE_*) are missing in web/.env.</p></Shell>;
   if (auth.status === "loading") return <Shell><div className="bank-spinner" role="status" aria-label="Loading" /></Shell>;
-  if (auth.status === "signedOut") return <Navigate to="/bank/login" replace />;
+  if (auth.status === "signedOut") return <Navigate to="/bank/login" replace state={{ from: location.pathname }} />;
   if (auth.status === "notBanker")
     return (
       <Shell email={auth.email}>

@@ -8,6 +8,7 @@ import { BRANCH, fmtDateTime, shortId, useApplication, type LiveError } from "..
 import { useOnline } from "../../lib/online";
 import { useSession } from "../../lib/session";
 import { speakServer } from "../../lib/speak";
+import { useSpokenError } from "../../lib/spokenError";
 
 const LIVE_ERROR: Record<LiveError, Key> = {
   not_configured: "notConfigured",
@@ -26,6 +27,7 @@ export function Screen8QR({ onRestart, onBack, onOpenHelp }: { onRestart: () => 
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
+  useSpokenError(error ? t(LIVE_ERROR[error]) : null, msgLang);
 
   // The real QR: the approved application's signed token, drawn in the browser.
   const token = app?.status === "approved" ? app.qr?.token : undefined;

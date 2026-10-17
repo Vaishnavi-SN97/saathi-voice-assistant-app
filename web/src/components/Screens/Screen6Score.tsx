@@ -6,6 +6,7 @@ import { useI18n, type Key } from "../../lib/i18n";
 import { api, ApiError } from "../../lib/api";
 import { useSession, type CheckResult } from "../../lib/session";
 import { speakServer } from "../../lib/speak";
+import { useSpokenError } from "../../lib/spokenError";
 
 const CIRCUMFERENCE = 415; // 2 * PI * 66
 
@@ -20,6 +21,7 @@ export function Screen6Score({ onNext, onBack, onOpenHelp }: { onNext: () => voi
   const [sending, setSending] = useState(false);
   const [notEligible, setNotEligible] = useState(false);
   const [error, setError] = useState<{ text: string; retry: () => void } | null>(null);
+  useSpokenError(error?.text ?? (notEligible ? t("notEligible") : null), msgLang);
 
   const fail = (e: unknown, retry: () => void) => {
     const status = e instanceof ApiError ? e.status : 0;

@@ -6,5 +6,7 @@
   "accessibility": {
     "addBypassLinks": false,
     "ignoreReducedMotion": false
-  }
+  },
+  "title": "Saathi",
+  "language": "en"
 }

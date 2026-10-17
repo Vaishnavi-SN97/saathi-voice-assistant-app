@@ -6,6 +6,7 @@ import { useI18n, type Key } from "../../lib/i18n";
 import { api, ApiError } from "../../lib/api";
 import { useSession, type CheckResult, type DocKind, type Issue } from "../../lib/session";
 import { speakServer } from "../../lib/speak";
+import { useSpokenError } from "../../lib/spokenError";
 
 const CHIP_KEY: Record<DocKind, Key> = { aadhaar: "chipAadhaar", pan: "chipPan", passbook: "chipPassbook" };
 const TITLE_KEY = (code: string) => `p_${code}` as Key;
@@ -21,6 +22,7 @@ export function Screen5Problems({ onNext, onBack, onOpenHelp }: { onNext: () => 
   const [loading, setLoading] = useState(!check);
   const [resolving, setResolving] = useState<string | null>(null);
   const [error, setError] = useState<{ text: string; retry: () => void } | null>(null);
+  useSpokenError(error?.text, msgLang);
 
   const fail = (e: unknown, retry: () => void) => {
     const status = e instanceof ApiError ? e.status : 0;

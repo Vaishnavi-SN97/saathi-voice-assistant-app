@@ -23,20 +23,33 @@ import "@fontsource/noto-sans-kannada/700.css";
 import "@fontsource/noto-sans-kannada/800.css";
 import App from "./App";
 import BankApp from "./bank/BankApp";
-import { I18nProvider } from "./lib/i18n";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { I18nProvider, useI18n } from "./lib/i18n";
 import { SessionProvider } from "./lib/session";
 import "./index.css";
 
 /** /bank is the banker app (its own sign-in and layout); everything else is the customer app. */
-function Root() {
-  const { pathname } = useLocation();
-  return pathname === "/bank" || pathname.startsWith("/bank/") ? (
-    <BankApp />
-  ) : (
-    <I18nProvider>
+/** Customer screens: the crash screen speaks in the language the person chose. */
+function CustomerApp() {
+  const { lang } = useI18n();
+  return (
+    <ErrorBoundary lang={lang}>
       <SessionProvider>
         <App />
       </SessionProvider>
+    </ErrorBoundary>
+  );
+}
+
+function Root() {
+  const { pathname } = useLocation();
+  return pathname === "/bank" || pathname.startsWith("/bank/") ? (
+    <ErrorBoundary>
+      <BankApp />
+    </ErrorBoundary>
+  ) : (
+    <I18nProvider>
+      <CustomerApp />
     </I18nProvider>
   );
 }

@@ -1,5 +1,5 @@
-import { api } from "../lib/api";
-import { getBankToken } from "./firebase";
+import { api, ApiError } from "../lib/api";
+import { getBankToken, logoutBanker } from "./firebase";
 
 /** applications/{id} as the bank sees it. */
 export interface BankApp {
@@ -37,9 +37,18 @@ export interface AuditEntry { id: string; at?: string; actor?: string; action?: 
 /** The AI proposes, a human decides: below this a field is shown in amber so the banker double-checks it. */
 export const LOW_CONFIDENCE = 0.8;
 
-/** API call as the signed-in banker. */
-export const bankApi = <T = unknown>(path: string, opts: Parameters<typeof api>[1] = {}) =>
-  api<T>(path, { ...opts, tokenProvider: getBankToken });
+/**
+ * API call as the signed-in banker. api() already retries once with a refreshed token; a 401 after that means the
+ * session is really gone, so we sign out and the route guard sends them to /bank/login.
+ */
+export const bankApi = async <T = unknown>(path: string, opts: Parameters<typeof api>[1] = {}): Promise<T> => {
+  try {
+    return await api<T>(path, { ...opts, tokenProvider: getBankToken });
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) await logoutBanker().catch(() => undefined);
+    throw e;
+  }
+};
 
 export const STATUS_LABEL: Record<Status, string> = {
   draft: "Draft",

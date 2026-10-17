@@ -8,6 +8,7 @@ import { BLUR_THRESHOLD, isBlurry, laplacianVariance } from "../../lib/blur";
 import { bitmapFromFile, bitmapFromVideo, openCamera, stopStream, toJpeg, type CameraFailure } from "../../lib/camera";
 import { DOC_KINDS, useSession, type CheckResult, type DocKind, type Issue } from "../../lib/session";
 import { speakServer } from "../../lib/speak";
+import { useSpokenError } from "../../lib/spokenError";
 
 interface ExtractResponse { kind: DocKind; valid: boolean; blurry: boolean; issues: Issue[]; blurScore: number; blurThreshold: number }
 interface Shot { blob: Blob; url: string; blur: number | null; blurry: boolean }
@@ -50,6 +51,7 @@ export function Screen4Camera({ onNext, onBack, onOpenHelp }: { onNext: () => vo
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  useSpokenError(error?.text, msgLang);
 
   // Live camera while there is nothing to review.
   const wantLive = !shot && !result;

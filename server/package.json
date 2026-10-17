@@ -18,7 +18,8 @@
     "retention": "tsx scripts/retention.ts",
     "journey:remote": "tsx scripts/journey-remote.ts",
     "secret-scan": "node scripts/secret-scan.mjs",
-    "prod-env": "node scripts/prod-env.mjs"
+    "prod-env": "node scripts/prod-env.mjs",
+    "check": "tsc -p ."
   },
   "dependencies": {
     "@google/genai": "^2.30.0",

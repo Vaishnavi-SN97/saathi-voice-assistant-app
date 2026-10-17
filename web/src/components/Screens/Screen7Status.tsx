@@ -8,6 +8,7 @@ import { BRANCH, fmtDateTime, useApplication, type LiveApplication, type LiveErr
 import { useOnline } from "../../lib/online";
 import { useSession } from "../../lib/session";
 import { speakServer } from "../../lib/speak";
+import { useSpokenError } from "../../lib/spokenError";
 
 type StepState = "done" | "current" | "future" | "attention";
 interface Step { title: Key; time: string; state: StepState }
@@ -48,6 +49,7 @@ export function Screen7Status({ onNext, onBack, onOpenHelp }: { onNext: () => vo
 
   const [togglePending, setTogglePending] = useState<boolean | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
+  useSpokenError(error ? t(LIVE_ERROR[error]) : toggleError, msgLang);
 
   if (!appId) return <Navigate to="/" replace />;
 

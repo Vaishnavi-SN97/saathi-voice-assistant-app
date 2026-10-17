@@ -13,6 +13,7 @@ import { LANG_CODE, useI18n } from "../../lib/i18n";
 import { api, ApiError } from "../../lib/api";
 import { audioExt, canRecord, playUrl, startRecording, stopAudio, type RecordingHandle } from "../../lib/audio";
 import { toQuestion, useSession, type Question } from "../../lib/session";
+import { useSpokenError } from "../../lib/spokenError";
 import { speakServer } from "../../lib/speak";
 
 const MAX_MS = 12_000;
@@ -68,6 +69,7 @@ export function Screen3Voice({
   const [elapsed, setElapsed] = useState(0);
   const [typing, setTyping] = useState<{ open: boolean; value: string }>({ open: false, value: "" });
   const recorder = useRef<RecordingHandle | null>(null);
+  useSpokenError(error?.text, appLang ?? "en");
 
   const langCode = LANG_CODE[appLang ?? "en"];
 

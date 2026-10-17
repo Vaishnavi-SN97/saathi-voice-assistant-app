@@ -11,17 +11,18 @@ All data in the demo is fake.
 | `server/` | Node 20 + Express + TypeScript, run with `tsx` (no build step). Sarvam (speech), Gemini (understanding), Firebase (auth + Firestore), Twilio (WhatsApp). |
 | `firestore.rules` | Clients read only their own application (bankers read all); every write goes through the API. |
 
-## Run it locally
+## Run locally
 
 ```bash
-cd server && cp .env.example .env     # fill in keys, or keep MOCK_AI=true to run with no keys at all
-npm install && npm run dev            # http://localhost:8080  (GET /health)
-
-cd web && cp .env.example .env        # VITE_API_URL + the 4 VITE_FIREBASE_* values
-npm install && npm run dev            # open it at phone width; /bank is the bank app
+cp server/.env.example server/.env && cp web/.env.example web/.env   # fill both in; MOCK_AI=true runs with no AI keys
+npm run install:all                                                   # root + server + web dependencies
+npm run dev                                                           # starts BOTH: API http://localhost:8080, app http://localhost:8443
+npm run check                                                         # typecheck server + web
+npm run smoke                                                         # 14-step end-to-end check against the running server (PASS/FAIL per step)
 ```
 
-`MOCK_AI=true` gives canned speech and understanding, and reads the fake demo documents from their QR codes: everything runs without keys.
+Customer app: <http://localhost:8443> (open it at phone width) · Bank app: <http://localhost:8443/bank> · API health: <http://localhost:8080/health>.
+`MOCK_AI=true` gives canned speech and understanding, and reads the fake demo documents from their QR codes: everything runs without AI keys.
 
 ## Useful commands (in `server/`)
 

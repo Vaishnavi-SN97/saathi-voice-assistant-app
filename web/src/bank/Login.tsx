@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { loginBanker, useBankAuth, type LoginError } from "./firebase";
 
 const MESSAGE: Record<LoginError, string> = {
@@ -14,12 +14,13 @@ const MESSAGE: Record<LoginError, string> = {
 
 export function BankLogin() {
   const auth = useBankAuth();
+  const from = (useLocation().state as { from?: string } | null)?.from;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (auth.status === "banker") return <Navigate to="/bank" replace />;
+  if (auth.status === "banker") return <Navigate to={from && from.startsWith("/bank") ? from : "/bank"} replace />;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -39,6 +40,9 @@ export function BankLogin() {
 
         {auth.status === "notConfigured" && (
           <p className="bank-notice bank-notice--warn">The app is not set up yet: Firebase keys (VITE_FIREBASE_*) are missing in web/.env.</p>
+        )}
+        {from && auth.status === "signedOut" && (
+          <p className="bank-notice bank-notice--warn">Your session ended. Please sign in again to continue.</p>
         )}
         {auth.status === "notBanker" && (
           <p className="bank-notice bank-notice--warn">{auth.email} is signed in without banker access. Sign in with a banker account.</p>
