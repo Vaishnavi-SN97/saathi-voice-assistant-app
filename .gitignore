@@ -19,3 +19,10 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
+
+# Saathi
+.env
+node_modules
+dist
+*service-account*.json
+*firebase-adminsdk*.json
