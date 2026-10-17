@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 import type { Express } from "express";
 
 import { createApp } from "./app.js";
@@ -34,15 +36,20 @@ if (missing.length) {
   console.warn(`env not set: ${missing.join(", ")}`);
 }
 
-// Never run on a public address with the built-in development signing secret.
+// Never sign check-in QRs on a public address with the built-in development secret: it is in the
+// repository, so anyone could forge one. Exiting here used to fail the whole deploy over a single
+// unset variable, which reads as a dead host rather than a misconfiguration, so fall back to a
+// random per-boot secret instead. That cannot be forged either; the only cost is that QRs issued
+// before a restart stop verifying, hence the warning.
+// An empty value counts as unset: a dashboard variable left blank must never become the signing key.
 if (
-  env.QR_JWT_SECRET === "dev-only-secret-change-me" &&
+  (!env.QR_JWT_SECRET.trim() || env.QR_JWT_SECRET === "dev-only-secret-change-me") &&
   !/localhost|127.0.0.1/.test(env.PUBLIC_API_URL)
 ) {
-  console.error(
-    "Refusing to start: set QR_JWT_SECRET (a long random value) when PUBLIC_API_URL is not localhost."
+  env.QR_JWT_SECRET = randomBytes(48).toString("base64url");
+  console.warn(
+    "QR_JWT_SECRET is not set: using a random secret for this run. Check-in QR codes stop working after a restart until you set it in the environment."
   );
-  process.exit(1);
 }
 
 let app: Express;
