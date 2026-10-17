@@ -5,7 +5,6 @@
    and senior-friendly ergonomics (60+ years, WCAG AAA text contrast).
    ========================================================================== */
 
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Noto+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Noto+Sans+Kannada:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 :root {
@@ -3286,3 +3285,106 @@ body {
     font-size: 12px;
   }
 }
+
+/* ==========================================================================
+   P7: phone shell, safe areas, language switcher, voice states
+   ========================================================================== */
+
+/* Full-screen phone mode with notch / home-indicator safe areas (viewport-fit=cover). */
+.phone-app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--neu-bg);
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+.phone-app-screen { flex: 1; display: flex; flex-direction: column; }
+.phone-app-screen > .screen-container { min-height: 100%; }
+.phone-app-switcher { display: flex; justify-content: flex-end; padding: 10px 16px 0; background: var(--neu-bg); }
+.screen-container { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+
+.lang-switcher {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--neu-bg-sunken);
+  box-shadow: var(--shadow-neu-inset-sm);
+}
+.lang-switcher button {
+  min-height: 44px;
+  min-width: 56px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--navy-muted);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.lang-switcher button.active {
+  background: var(--primary-teal);
+  color: #fff;
+  box-shadow: var(--shadow-neu-raised-sm);
+}
+
+.api-error-box { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.retry-link-btn {
+  align-self: center;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 0;
+  background: transparent;
+  color: var(--primary-teal);
+  font-size: 17px;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.option-chip-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.option-chip {
+  min-height: 52px;
+  padding: 0 20px;
+  border: var(--neu-bevel-light);
+  border-radius: 26px;
+  background: var(--neu-bg);
+  box-shadow: var(--shadow-neu-raised-sm);
+  color: var(--navy-text);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.option-chip:active { box-shadow: var(--shadow-neu-inset-sm); }
+
+.mic-timer { font-size: 15px; font-weight: 700; color: var(--navy-muted); font-variant-numeric: tabular-nums; }
+.hero-mic-circle-btn:disabled { opacity: 0.55; cursor: default; }
+
+/* Live level meter: bars follow the real microphone level */
+.waveform-live .wave-bar {
+  opacity: 1;
+  animation: none;
+  background: linear-gradient(180deg, var(--accent-saffron) 0%, var(--primary-teal) 100%);
+  transition: transform 0.08s linear;
+}
+
+.type-instead-link.standalone { align-self: center; min-height: 48px; padding: 0 16px; font-size: 17px; }
+
+.modal-actions-pair { display: flex; gap: 12px; margin-top: 8px; }
+.modal-actions-pair > * { flex: 1; }
+.modal-secondary-btn {
+  min-height: 58px;
+  border: var(--neu-bevel-light);
+  border-radius: 18px;
+  background: var(--neu-bg);
+  box-shadow: var(--shadow-neu-raised-sm);
+  color: var(--navy-text);
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.name-text-input { width: 100%; min-height: 56px; font-size: 20px; }

@@ -177,7 +177,7 @@ export async function handleAnswer(ctx: Ctx, user: AuthUser, appId: string, text
   // 3. Keep as unconfirmed and read it back
   const answer: Answer = { value, valueEn: ex.valueEn ?? (typeof value === "string" ? value : null), confidence: source === "typed" ? 1 : ex.confidence, confirmed: false };
   await save(ctx, appId, app, { answers: { ...answers, [f.id]: answer }, interview: { attempts: 0 } });
-  return { state: "confirming" as const, fieldId: f.id, readback: await speak(ctx, readBack(f, value, lang), lang), value, progress: progress(answers) };
+  return { state: "confirming" as const, fieldId: f.id, readback: await speak(ctx, readBack(f, value, lang), lang), value, display: display(f, value, lang), progress: progress(answers) };
 }
 
 /** Handle the yes/no reply to a read-back. */

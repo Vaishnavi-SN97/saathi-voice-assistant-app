@@ -3,9 +3,19 @@ import { Icon } from "../Icons";
 import {
   PrimaryButton,
   ProgressDots,
+  WarningBanner,
   BottomHelpBar,
 } from "../UIComponents";
 import { speakText } from "../../utils/speech";
+import { LANG_CODE, useI18n } from "../../lib/i18n";
+import { api, ApiError } from "../../lib/api";
+import { toQuestion, useSession } from "../../lib/session";
+
+interface CreateResponse {
+  id: string;
+  status: string;
+  question: { id: string; type: string; text: string; audioUrl: string; options?: { value: string; label: string }[] };
+}
 
 export function Screen2Consent({
   onNext,
@@ -16,29 +26,34 @@ export function Screen2Consent({
   onBack: () => void;
   onOpenHelp: () => void;
 }) {
+  const { lang, t } = useI18n();
+  const session = useSession();
   const [showModal, setShowModal] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const consentPoints = [
-    {
-      icon: "mic" as const,
-      text: "We will listen to you and read your documents to fill your bank form.",
-    },
-    {
-      icon: "lock" as const,
-      text: "We will never ask for your OTP or PIN.",
-      highlight: true,
-    },
-    {
-      icon: "shield" as const,
-      text: "A bank officer checks everything before it is final.",
-    },
+    { icon: "mic" as const, text: t("c1") },
+    { icon: "lock" as const, text: t("c2"), highlight: true },
+    { icon: "shield" as const, text: t("c3") },
   ];
 
-  const handleListenScreen = () => {
-    speakText(
-      "Before we start. We will listen to you and read your documents to fill your bank form. We will never ask for your OTP or PIN. A bank officer checks everything before it is final. Your data stays private.",
-      "en-IN"
-    );
+  const handleListenScreen = () => speakText(t("consentSpeech"), LANG_CODE[lang]);
+
+  // "I agree" creates the application (draft + consent) and gets the first question.
+  const handleAgree = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api<CreateResponse>("/applications", { json: { language: lang, consent: true } });
+      session.start(r.id, lang, toQuestion(r.question));
+      onNext();
+    } catch (e) {
+      const code = e instanceof ApiError ? e.status : 0;
+      setError(code === -1 ? t("notConfigured") : code === 0 ? t("netError") : t("genericError"));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -48,42 +63,27 @@ export function Screen2Consent({
 
       {/* Top bar with back and listen button */}
       <div className="top-action-bar">
-        <button
-          type="button"
-          onClick={onBack}
-          className="nav-back-btn"
-          aria-label="Go back to language picker"
-        >
+        <button type="button" onClick={onBack} className="nav-back-btn" aria-label={t("back")}>
           <Icon name="chevron" size={24} className="rotate-180" />
-          <span>Back</span>
+          <span>{t("back")}</span>
         </button>
 
-        <button
-          type="button"
-          onClick={handleListenScreen}
-          className="listen-pill-btn"
-          aria-label="Listen to this page aloud"
-        >
+        <button type="button" onClick={handleListenScreen} className="listen-pill-btn" aria-label={t("listenThis")}>
           <Icon name="speaker" size={22} />
-          <span>Listen to this</span>
+          <span>{t("listenThis")}</span>
         </button>
       </div>
 
       {/* Screen Heading */}
       <div className="page-heading-block">
-        <span className="section-eyebrow">Your Safety First</span>
-        <h1 className="screen-main-heading">Before we start</h1>
+        <span className="section-eyebrow">{t("yourSafety")}</span>
+        <h1 className="screen-main-heading">{t("beforeStart")}</h1>
       </div>
 
       {/* 3 Privacy Lines with friendly rounded icons */}
       <div className="consent-points-list">
         {consentPoints.map((item, index) => (
-          <div
-            key={index}
-            className={`consent-point-card ${
-              item.highlight ? "highlight-point" : ""
-            }`}
-          >
+          <div key={index} className={`consent-point-card ${item.highlight ? "highlight-point" : ""}`}>
             <div className="consent-icon-circle">
               <Icon name={item.icon} size={26} />
             </div>
@@ -98,28 +98,35 @@ export function Screen2Consent({
           <Icon name="shield" size={32} />
         </div>
         <div className="shield-badge-copy">
-          <strong className="badge-title">Your data stays private.</strong>
-          <span className="badge-subtitle">
-            Protected and only shared with your bank.
-          </span>
+          <strong className="badge-title">{t("privTitle")}</strong>
+          <span className="badge-subtitle">{t("privSub")}</span>
         </div>
       </div>
 
+      {error && (
+        <div className="api-error-box" role="alert">
+          <WarningBanner message={error} icon="alert" variant="amber" />
+          {error !== t("notConfigured") && (
+            <button type="button" className="retry-link-btn" onClick={handleAgree}>
+              {t("tryAgain")}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Actions: Primary button + secondary text button */}
       <div className="screen-bottom-action">
-        <PrimaryButton onClick={onNext}>I agree, let’s begin</PrimaryButton>
+        <PrimaryButton onClick={handleAgree} disabled={busy}>
+          {busy ? t("starting") : t("agree")}
+        </PrimaryButton>
 
-        <button
-          type="button"
-          onClick={() => setShowModal(true)}
-          className="read-more-text-btn"
-        >
-          Read more about privacy & safety
+        <button type="button" onClick={() => setShowModal(true)} className="read-more-text-btn">
+          {t("readMore")}
         </button>
       </div>
 
       {/* Bottom Help Link */}
-      <BottomHelpBar onHelpClick={onOpenHelp} />
+      <BottomHelpBar onHelpClick={onOpenHelp} label={t("help")} />
 
       {/* Read More Modal */}
       {showModal && (
@@ -129,29 +136,15 @@ export function Screen2Consent({
               <div className="modal-icon-badge">
                 <Icon name="shield" size={28} />
               </div>
-              <h3 className="modal-title">Our Senior Safety Promise</h3>
+              <h3 className="modal-title">{t("mTitle")}</h3>
             </div>
             <div className="modal-body-content">
-              <p>
-                <strong>1. Zero Fraud Risk:</strong> Saathi will never ask for your
-                card CVV, ATM PIN, internet banking password, or phone SMS OTP.
-              </p>
-              <p>
-                <strong>2. Human Verification:</strong> Your application is not
-                completed automatically. A certified branch officer reviews
-                your submission in person.
-              </p>
-              <p>
-                <strong>3. Voice Consent:</strong> You have full control at all
-                times. You can cancel or pause whenever you wish.
-              </p>
+              <p>{t("m1")}</p>
+              <p>{t("m2")}</p>
+              <p>{t("m3")}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowModal(false)}
-              className="modal-close-primary-btn"
-            >
-              I Understand
+            <button type="button" onClick={() => setShowModal(false)} className="modal-close-primary-btn">
+              {t("understand")}
             </button>
           </div>
         </div>

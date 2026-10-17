@@ -133,6 +133,8 @@ export function QuestionCard({
   onToggleSlow,
   chipText = "Question 3 of 12",
   subtitle = "Please tell me",
+  listenLabel = "Listen again",
+  slowLabel = "Speak slower",
 }: {
   question: string;
   onListenAgain?: () => void;
@@ -140,6 +142,8 @@ export function QuestionCard({
   onToggleSlow: () => void;
   chipText?: string;
   subtitle?: string;
+  listenLabel?: string;
+  slowLabel?: string;
 }) {
   return (
     <div className="question-card">
@@ -151,10 +155,10 @@ export function QuestionCard({
           type="button"
           onClick={onListenAgain}
           className="listen-pill-btn"
-          aria-label="Listen again"
+          aria-label={listenLabel}
         >
           <Icon name="speaker" size={22} />
-          <span>Listen again</span>
+          <span>{listenLabel}</span>
         </button>
         <button
           type="button"
@@ -165,7 +169,7 @@ export function QuestionCard({
           <span className="switch-track">
             <span className="switch-thumb" />
           </span>
-          <span>Speak slower</span>
+          <span>{slowLabel}</span>
         </button>
       </div>
     </div>

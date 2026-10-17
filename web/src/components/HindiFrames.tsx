@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Screen3Voice } from "./Screens/Screen3Voice";
+import { Screen3VoiceStatic as Screen3Voice } from "./Screens/Screen3VoiceStatic";
 import { Screen7Status } from "./Screens/Screen7Status";
 import { Icon } from "./Icons";
 

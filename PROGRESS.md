@@ -33,6 +33,19 @@
 
 - [x] P6 pdf, submit, review, QR, check-in, sign, WhatsApp notify (server/scripts/run-journey.ts, `npm run journey`)
 
+- [x] P7 web: Firebase anonymous auth, API client, i18n en/hi/kn, fonts, safe areas, router, language + consent + interview screens (screens 4-8 are still the static prototypes: P8/P9)
+
+## P7 decisions
+- web/.env must hold VITE_API_URL and the 4 VITE_FIREBASE_* values (Firebase console > Project settings > Your apps > Web app). Without them every API call shows a "not set up" message instead of failing silently.
+- The web package.json had picked up all the server dependencies (a stray install during P0) and web/tsconfig.json had been overwritten with the server one: both restored (original Figma tsconfig; web deps are now only react, react-dom, react-router-dom, firebase and @fontsource/*).
+- Phones (<= 520 px) get the app full screen with safe-area padding; wider screens keep the original iPhone-frame design preview, header tabs and screen jump bar. Screens are real routes: / /consent /interview /camera /problems /readiness /status /qr. Opening /interview without a session bounces to / (an application is needed first).
+- Language: the card picker (and a small EN / हिन्दी / ಕನ್ನಡ switcher on the first two screens) changes the whole UI. The interview language is fixed when the application is created at consent; the switcher is hidden afterwards.
+- Interview: mic tap to start/stop (12 s limit, live level meter) -> /voice/stt -> /interview/answer -> read-back card (server audio plays) -> /interview/confirm. Also: type instead (auto-offered after 2 failed tries), tap-an-option chips for choice fields, Listen again, Speak slower (asks /tts at pace 0.75), amber scam-warning banner with the spoken warning, a retry button on every failed call, mic-denied / unsupported messages.
+- Server: /interview/answer now also returns `display` (the value as shown on the read-back card).
+- Removed the dev-only "Test OTP Warning" toggle. The old static voice screen is kept as Screen3VoiceStatic.tsx for the Hindi comparison frame.
+- Fonts are self-hosted (@fontsource Noto Sans / Devanagari / Kannada + Plus Jakarta Sans); the Google Fonts @import is gone.
+- Not run in a real browser by me (no screenshots/browsing per the rules): hand test below.
+
 ## P6 decisions
 - QR: JWT {aid, jti, typ:"qr"} HS256 with QR_JWT_SECRET, 3 days; the QR image encodes the token. `application.qr` = {jti, expiresAt, usedAt} plus `token` (extra) so the customer app can draw the QR. The PNG is also in the media store as `qr-<jti>` and goes to WhatsApp as mediaUrl. /checkin/verify does not consume the QR; /sign does (usedAt). A used QR is rejected by both with 409 qr_used.
 - /submit re-evaluates (blocking mismatch or unconfirmed answer -> 409 not_eligible with the list), builds the PDF itself, sets metrics.readyAt. /pdf can also be called alone; after signing the PDF is re-issued with the signature embedded.
@@ -59,6 +72,7 @@
 - `server/src/services/interview-engine.ts`: read-back sentences, "didn't catch that", "say yes or no", "let's type it", Yes/No words.
 - `server/src/services/scam-shield.ts`: scam warning (hi, kn). SPEC's English wording is exact; the translations are mine.
 - `server/src/services/mismatches.ts` (all 8 messages + document names आधार/पैन कार्ड/पासबुक, ಆಧಾರ್/ಪ್ಯಾನ್ ಕಾರ್ಡ್/ಪಾಸ್‌ಬುಕ್) and `readiness.ts` (to-dos), hi + kn.
+- `web/src/lib/i18n.tsx`: all UI strings (hi, kn): language / consent / interview / help texts and error messages.
 - `server/src/services/notify.ts`: all 5 WhatsApp messages (hi, kn).
 - `server/src/services/gemini.ts`: none (prompts are English). Demo docs are English only.
 - `server/src/services/yesno.ts`: hi/kn yes/no word lists (colloquial variants may be missing).
