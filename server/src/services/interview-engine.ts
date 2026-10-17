@@ -4,6 +4,7 @@ import type { AuthUser } from "../auth.js";
 import { AppError } from "../errors.js";
 import { form, toLang, type Field, type Lang } from "../form.js";
 import { assertTransition } from "../status.js";
+import { isValidDob, isValidMobile } from "./validators.js";
 import { ttsCached } from "./sarvam.js";
 import { SHIELD_WARNING, scanText } from "./scam-shield.js";
 import { classifyYesNo, type YesNo } from "./yesno.js";
@@ -26,17 +27,6 @@ export const nextField = (answers: Answers): Field | null =>
 
 /* ---------- validation ---------- */
 
-function validDob(iso: string, now = new Date()): boolean {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  if (!m) return false;
-  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  const dt = new Date(Date.UTC(y, mo - 1, d));
-  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return false;
-  let age = now.getUTCFullYear() - y;
-  if (now.getUTCMonth() < mo - 1 || (now.getUTCMonth() === mo - 1 && now.getUTCDate() < d)) age--;
-  return age >= 18 && age <= 110;
-}
-
 /** Returns the cleaned value, or null if unusable for this field. */
 export function validate(f: Field, raw: string | number | boolean | null, now = new Date()): string | boolean | null {
   if (raw === null || raw === undefined) return null;
@@ -49,11 +39,11 @@ export function validate(f: Field, raw: string | number | boolean | null, now = 
     }
     case "mobile": {
       const d = String(raw).replace(/[\s-]/g, "").replace(/^(\+91|0)(?=\d{10}$)/, "");
-      return /^[6-9]\d{9}$/.test(d) ? d : null;
+      return isValidMobile(d) ? d : null;
     }
     case "date": {
       const s = String(raw).trim();
-      return validDob(s, now) ? s : null;
+      return isValidDob(s, now) ? s : null;
     }
     case "name": {
       const s = String(raw).trim().replace(/\s+/g, " ");

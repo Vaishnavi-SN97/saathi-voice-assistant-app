@@ -5,7 +5,7 @@
 - [x] P2 voice (Sarvam stt/tts/translate, audio-convert, scam shield, /voice/stt, /tts)
 - [x] P3 interview (Gemini extractor, interview-engine, /interview/answer + /confirm, last field -> docs_pending)
 - [x] Align P0-P3 with SPEC.md (below)
-- [ ] P4 validators, matcher, readiness
+- [x] P4 validators (Verhoeff, PAN, IFSC, mobile, age), matcher (own Jaro-Winkler), mismatches (8 codes en/hi/kn), readiness (SPEC weights)
 
 ## Aligned with SPEC.md (changed)
 - Sarvam: STT `saaras:v4` + `mode=transcribe`; TTS `bulbul:v3`, `language_code`, speaker `priya`, `output_audio_codec=mp3` (audio/mpeg); translate `source_language_code=auto`, no model. All verified live in en-IN, hi-IN, kn-IN.
@@ -29,10 +29,17 @@
 - `form.json` uses `fields` (not `questions`) and carries `label` + `options` per field.
 - Non-image uploads >= 900 KB are rejected (e.g. an oversized pdf).
 
+## P4 decisions
+- Readiness: a spelled_differently name earns half the 15 name points (SPEC gives no partial rule). The quick-approve badge needs score >= 90 AND all 3 documents present and clear (a missing passbook alone scores exactly 90).
+- Matcher: an initial that only one name has ("Ramesh K Shetty" vs "Ramesh Shetty") caps the result at spelled_differently, otherwise Jaro-Winkler alone would say match (0.956). Initials that the other name spells out ("R Shetty") are expanded and match.
+- Mismatches blame the document, judged against the customer answers; document-vs-document pairs are used only when the customer has not given that name/DOB.
+- Document fields read: aadhaar/pan fields.{name,dob}, passbook fields.{name|holderName}; valid=false maps to AADHAAR_INVALID / PAN_INVALID / IFSC_INVALID.
+
 ## Needs native-speaker check (all hi / kn text is machine-written)
 - `server/data/form.json`: consent text; every field label, prompt and option label (occupation: सेवानिवृत्त/गृहिणी/किसान/व्यापार/नौकरीपेशा/अन्य; ನಿವೃತ್ತ/ಗೃಹಿಣಿ/ರೈತ/ವ್ಯಾಪಾರ/ಉದ್ಯೋಗಿ/ಇತರೆ; relation: पति/पत्नी, बेटा, बेटी; ಪತಿ/ಪತ್ನಿ, ಮಗ, ಮಗಳು).
 - `server/src/services/interview-engine.ts`: read-back sentences, "didn't catch that", "say yes or no", "let's type it", Yes/No words.
 - `server/src/services/scam-shield.ts`: scam warning (hi, kn). SPEC's English wording is exact; the translations are mine.
+- `server/src/services/mismatches.ts` (all 8 messages + document names आधार/पैन कार्ड/पासबुक, ಆಧಾರ್/ಪ್ಯಾನ್ ಕಾರ್ಡ್/ಪಾಸ್‌ಬುಕ್) and `readiness.ts` (to-dos), hi + kn.
 - `server/src/services/yesno.ts`: hi/kn yes/no word lists (colloquial variants may be missing).
 - Watch: formal vs informal "you" (आप / ನೀವು), "whatsapp" spelling (व्हाट्सऐप / ವಾಟ್ಸಾಪ್), how dates and digits are read aloud.
 
