@@ -22,7 +22,11 @@ const RULES = [
   ["assigned secret", /\b[A-Z0-9_]*(SECRET|TOKEN|API_KEY|PASSWORD|PRIVATE_KEY)\s*=\s*["']?[A-Za-z0-9/+_.\-]{24,}/],
 ];
 const SKIP_EXT = /\.(jpe?g|png|gif|webp|ico|woff2?|ttf|otf|pdf|lock)$/i;
-const SKIP_FILE = /(^|\/)(package-lock\.json|pnpm-lock\.yaml|\.env\.example)$/;
+// .env.example is deliberately NOT skipped: a filled-in example file is the usual way a real key gets committed.
+const SKIP_FILE = /(^|\/)(package-lock\.json|pnpm-lock\.yaml)$/;
+/** Names whose value must be blank in an example file. */
+const SECRET_NAME = /(KEY|SECRET|TOKEN|PASSWORD|SID|CREDENTIAL|PRIVATE)/;
+const PUBLIC_NAME = /^(VITE_API_URL|VITE_FIREBASE_AUTH_DOMAIN|VITE_FIREBASE_PROJECT_ID|PUBLIC_API_URL|CORS_ORIGINS|FIREBASE_PROJECT_ID|GEMINI_MODEL|NOTIFY_MODE|MOCK_AI|PORT|BASELINE_MANUAL_MINUTES|RETENTION|RETENTION_DAYS|TWILIO_WHATSAPP_FROM)$/;
 
 // exact local secrets
 const secrets = [];
@@ -56,13 +60,26 @@ const scanText = (label, text) => {
   for (const [name, v] of secrets) if (name.endsWith("(body)") && flat.includes(v)) hits.push(`${label}  contains the FIREBASE private key body`);
 };
 
+/** An example file must show the shape, never a value: a filled-in one is how a real key usually gets committed. */
+const scanExample = (label, text) => {
+  text.split("\n").forEach((line, i) => {
+    const m = /^\s*([A-Z0-9_]+)\s*=\s*["']?(.*?)["']?\s*$/.exec(line);
+    if (!m) return;
+    const [, name, value] = m;
+    if (!value || PUBLIC_NAME.test(name) || value.startsWith("http") || value.startsWith("-----BEGIN")) return;
+    if (SECRET_NAME.test(name)) hits.push(`${label}:${i + 1}  ${name} has a value; an example file must leave it blank`);
+  });
+};
+
 const files = git("ls-files", "--cached", "--others", "--exclude-standard").split("\n").filter(Boolean);
 let scanned = 0;
 for (const f of files) {
   if (SKIP_EXT.test(f) || SKIP_FILE.test(f)) continue;
   const p = join(root, f);
   if (!existsSync(p) || statSync(p).size > 2_000_000) continue;
-  scanText(f, readFileSync(p, "utf8"));
+  const text = readFileSync(p, "utf8");
+  scanText(f, text);
+  if (/\.env\.example$/.test(f)) scanExample(f, text);
   scanned++;
 }
 
