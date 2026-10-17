@@ -15,8 +15,11 @@ export function createSarvam(apiKey: string | undefined): Sarvam {
   if (!apiKey) throw new Error("SARVAM_API_KEY is not set (or use MOCK_AI=true)");
   const headers = { "api-subscription-key": apiKey };
   const fail = (e: unknown): never => {
-    console.error(axios.isAxiosError(e) ? `Sarvam ${e.response?.status ?? "network"}: ${JSON.stringify(e.response?.data ?? e.message)}` : String(e));
-    throw new AppError(502, "upstream_error", "Speech service failed");
+    const status = axios.isAxiosError(e) ? e.response?.status : undefined;
+    const upstream = axios.isAxiosError(e) ? (e.response?.data as any)?.error : undefined;
+    console.error(axios.isAxiosError(e) ? `Sarvam ${status ?? "network"}: ${JSON.stringify(e.response?.data ?? e.message)}` : String(e));
+    // keep the upstream detail on the error so scripts and logs can tell "no credits" from "bad key"
+    throw Object.assign(new AppError(502, "upstream_error", "Speech service failed"), { upstream: { status, code: upstream?.code, message: upstream?.message } });
   };
 
   return {

@@ -1,8 +1,5 @@
-export function speakText(
-  text: string,
-  lang: "hi-IN" | "kn-IN" | "en-IN" = "en-IN",
-  slow = false
-) {
+/** Browser speech. Most devices only have an English voice, so this is a fallback: prefer speakServer(). */
+export function speakText(text: string, lang = "en-IN", slow = false) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
     return;
   }

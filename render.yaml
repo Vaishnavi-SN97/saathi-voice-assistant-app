@@ -1,0 +1,55 @@
+# Render blueprint for the Saathi API. The web app goes to Vercel (see DEPLOY.md).
+# Every value below is set in the Render dashboard: sync:false means "ask me, never store it in git".
+services:
+  - type: web
+    name: saathi-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Render sets PORT itself; the server reads process.env.PORT.
+      - key: NODE_VERSION
+        value: 20
+      - key: MOCK_AI
+        value: "false"
+      - key: NOTIFY_MODE
+        value: direct
+      - key: BASELINE_MANUAL_MINUTES
+        value: "30"
+      - key: RETENTION_DAYS
+        value: "7"
+      # Your Vercel URL, e.g. https://saathi.vercel.app (comma-separated for more than one)
+      - key: CORS_ORIGINS
+        sync: false
+      # This service's own URL, e.g. https://saathi-api.onrender.com (Twilio fetches media from it)
+      - key: PUBLIC_API_URL
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY_BACKUP
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      # Paste with literal \n between the lines, in double quotes
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: QR_JWT_SECRET
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_FROM
+        sync: false
+      - key: DEMO_WHATSAPP_TO
+        sync: false

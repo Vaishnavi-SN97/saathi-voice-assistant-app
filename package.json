@@ -14,7 +14,8 @@
     "test": "npm --prefix server test",
     "smoke": "tsx scripts/smoke.ts",
     "secret-scan": "npm --prefix server run secret-scan",
-    "tts-test": "tsx scripts/tts-test.ts"
+    "tts-test": "tsx scripts/tts-test.ts",
+    "keys-check": "tsx scripts/keys-check.ts"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

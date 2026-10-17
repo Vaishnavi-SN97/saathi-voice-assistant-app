@@ -19,7 +19,8 @@
     "journey:remote": "tsx scripts/journey-remote.ts",
     "secret-scan": "node scripts/secret-scan.mjs",
     "prod-env": "node scripts/prod-env.mjs",
-    "check": "tsc -p ."
+    "check": "tsc -p .",
+    "translate:gemini": "tsx scripts/translate-gemini.ts"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",

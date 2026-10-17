@@ -56,6 +56,13 @@
 - New test file `server/src/fix-dob-display.test.ts` (4 cases): month-name dates in 3 languages, and the WhatsApp text-only fallback. `src/p3.test.ts` updated for the new date format.
 - NOT fixed, blocked: document reading (Aadhaar/PAN capture) needs Gemini, and the free key is at its daily cap (429 RESOURCE_EXHAUSTED, ~12 h to reset, limit 20 requests/day). Fill `GEMINI_API_KEY_BACKUP` with a second key to double it, or wait for the reset. Everything else on that screen works.
 
+## Deploy ready (DEPLOY-NOW)
+- `npm run keys-check`: one tiny real call per service. Result today: Gemini PASS (model fallback in use), all four Sarvam checks FAIL with **HTTP 402 insufficient_quota_error "No credits available"** - the Sarvam account is out of credits, not a code or key fault. Sarvam errors now carry the upstream status/code so logs and scripts say "402 no credits" instead of a vague "Speech service failed".
+- Speech-to-text is judged independently (it builds its own 22 kHz WAV and converts it), so it is not reported as broken just because text-to-speech is down. The ffmpeg conversion to 16 kHz mono was confirmed working.
+- Deployability: server/package.json already had tsx + every runtime package in dependencies, `start`, and engines node>=20; added `render.yaml` (rootDir server, npm install / npm start, health check /health, free plan, secrets as sync:false names only). web/vercel.json already rewrites every route to index.html and the web reads only VITE_ variables. Both .env files are git-ignored.
+- `web/src/types.ts` had been edited to import a `./lib/languages` module that does not exist, which broke the typecheck; restored the inline Language type. `npm run check` passes again.
+- DEPLOY.md rewritten for Render -> Vercel -> back to Render -> Firebase, with env var NAMES only, a 6-step live test and the free-plan cold-start warm-up tip.
+
 ## Voice playback fix (browser autoplay)
 - Sarvam itself was never the problem: `npm run tts-test` calls the endpoint directly and hi-IN, kn-IN, en-IN all return real mp3 (model bulbul:v3, speaker priya, those exact language codes are valid). Saved samples land in server/assets/tts-check (git-ignored).
 - REAL CAUSE of "text shows, no audio": the web created a NEW Audio() for every sentence and called play() after awaiting /tts. Mobile browsers (iOS Safari in particular) only allow playback on an element the person has already started inside a tap, and the await ends that tap, so play() was refused with NotAllowedError, which the code then swallowed.

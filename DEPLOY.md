@@ -1,101 +1,106 @@
 # Deploying Saathi
 
-Server (Express) -> **Railway**. Web (Vite) -> **Vercel**. Data, sign-in and rules stay in **Firebase** (project `saathi-f5b30`).
+**Server (Express) → Render. Web (Vite) → Vercel. Data, sign-in and rules stay in Firebase (`saathi-f5b30`).**
 
-> On the machine this was built on, no deployment CLI (`railway`, `vercel`, `firebase`) was installed or logged in, so nothing has been deployed yet.
-> Everything below is done in the hosts' dashboards (the most reliable way), with the CLI alternative where it exists.
-> Secrets are never typed into a terminal or committed: `npm run prod-env` builds the files you paste into the dashboards and prints no values.
+Do it in this order: **Render first**, then Vercel, then come back to Render for two values, then Firebase.
+You never type a secret into a terminal: `npm run prod-env -- --api <render url> --web <vercel url>` writes two
+git-ignored files whose contents you paste into the dashboards, and it prints no values.
 
-Do the steps **in this order**: Firebase, server, web, then wire the two URLs together.
+---
 
-## 1. Firebase (once)
+## 1. Render: the API (about 5 minutes)
 
-1. Console > **Authentication > Sign-in method**: enable **Anonymous** (customers) and **Email/Password** (bankers).
-2. Create the banker account: **Authentication > Users > Add user** (email + password).
-3. Give it the banker role (from `server/`, with your `server/.env` in place): `npm run set-banker -- banker@example.com`. The person signs out and in again afterwards.
-4. Publish the Firestore rules (the web app's live status and the bank queue need them):
-   ```bash
-   npx firebase-tools login
-   npx firebase-tools deploy --only firestore:rules --project saathi-f5b30
-   ```
-   (`firebase.json` and `.firebaserc` are in the repo root.) Re-run this whenever `firestore.rules` changes.
-5. Your **web app config** (Project settings > General > Your apps > Web app): `apiKey`, `authDomain`, `projectId`, `appId`. They go into `web/.env` as `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`.
-   These are identifiers, not secrets, but restrict the API key to your web domains (Google Cloud console > APIs & Services > Credentials > the browser key > Website restrictions).
+1. Push this repo to GitHub (already done).
+2. <https://dashboard.render.com> → **New → Web Service** → **Build and deploy from a Git repository** → pick this repo.
+3. Render reads `render.yaml`, so these are already set: **Root Directory `server`**, **Build `npm install`**,
+   **Start `npm start`**, **Health check `/health`**, **Free** plan, Node 20. Leave them.
+4. Click **Advanced → Add Environment Variable** (or **Environment** after the first deploy) and add the names below.
+   `MOCK_AI`, `NOTIFY_MODE`, `BASELINE_MANUAL_MINUTES`, `RETENTION_DAYS` and `NODE_VERSION` come from `render.yaml`; you fill the rest.
+   Do **not** set `PORT` — Render sets it and the server reads `process.env.PORT`.
 
-## 2. Server on Railway
+   | Name | What goes in it |
+   | --- | --- |
+   | `SARVAM_API_KEY` | from your Sarvam dashboard |
+   | `GEMINI_API_KEY` | from Google AI Studio |
+   | `GEMINI_API_KEY_BACKUP` | optional second key, ideally in a **different** Google Cloud project |
+   | `GEMINI_MODEL` | leave empty unless you want to pin one |
+   | `FIREBASE_PROJECT_ID` | `saathi-f5b30` |
+   | `FIREBASE_CLIENT_EMAIL` | from the service-account JSON |
+   | `FIREBASE_PRIVATE_KEY` | from the service-account JSON, in double quotes, with literal `\n` between lines |
+   | `QR_JWT_SECRET` | a long random string (the server refuses to start in public without one) |
+   | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` | from Twilio |
+   | `DEMO_WHATSAPP_TO` | optional: your own number, to receive the demo rows' updates |
+   | `CORS_ORIGINS` | **leave empty for now** — step 3 |
+   | `PUBLIC_API_URL` | **leave empty for now** — step 3 |
 
-1. railway.com > **New Project > Deploy from GitHub repo** > choose this repo.
-2. Service **Settings > Source > Root Directory = `server`**. (`server/railway.json` already sets the start command `npm start` and the health check `/health`.)
-3. **Settings > Networking > Generate Domain**. Note the URL, for example `https://saathi-api.up.railway.app`.
-4. Variables: first build the file (needs the two URLs, so use the Railway one now and a placeholder for the web one; you fix it in step 4 below):
-   ```bash
-   cd server
-   npm run prod-env -- --api https://saathi-api.up.railway.app --web https://saathi.vercel.app
-   ```
-   Open `server/.env.production`, copy everything, and in Railway **Variables > RAW Editor** paste it and save. Railway redeploys.
-   The file is your `server/.env` with `MOCK_AI=false`, `PUBLIC_API_URL`, `CORS_ORIGINS`, and a generated `QR_JWT_SECRET` if you had none. Railway sets `PORT` itself.
-   CLI alternative (if you installed it): `railway link`, then `railway variables --set "NAME=value"` per variable.
-5. Check it: `curl https://saathi-api.up.railway.app/health` should answer `{"ok":true,"mockAi":false}`.
+5. **Create Web Service**. When it goes live, copy the URL, e.g. `https://saathi-api.onrender.com`.
+6. Check it: open `<render url>/health` → `{"ok":true,"mockAi":false}`.
 
-Server variables (names only; see `server/.env.example`):
-`CORS_ORIGINS`, `PUBLIC_API_URL`, `SARVAM_API_KEY`, `GEMINI_API_KEY`, `GEMINI_API_KEY_BACKUP`, `GEMINI_MODEL`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`, `NOTIFY_MODE`, `MOCK_AI`, `QR_JWT_SECRET`, `BASELINE_MANUAL_MINUTES`, optional `RETENTION_DAYS` (default 7) and `RETENTION` (`off` disables the clean-up).
-`FIREBASE_PRIVATE_KEY` is pasted exactly as in your `.env`: in double quotes, with literal `\n` between lines.
-The server refuses to start on a public `PUBLIC_API_URL` without a real `QR_JWT_SECRET`.
+## 2. Vercel: the web app (about 3 minutes)
 
-## 3. Web on Vercel
+1. <https://vercel.com/new> → import the same repo.
+2. **Root Directory: `web`**. Framework **Vite** is detected; `web/vercel.json` already sends every route to
+   `index.html`, which is what makes `/bank` work on a refresh.
+3. **Environment Variables** (Production) — all five, names exactly:
 
-1. vercel.com > **Add New > Project** > import this repo.
-2. **Root Directory = `web`**. Framework: Vite (detected). `web/vercel.json` adds the rewrite that makes `/bank` and the other paths work on refresh.
-3. **Environment Variables**: `npm run prod-env` also wrote `web/.env.production` (only `VITE_API_URL` is in it if you have no `web/.env` yet). Make sure all five exist for Production, then paste into the first field:
-   `VITE_API_URL` (the Railway URL), `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`.
-4. **Deploy**. Note the URL, for example `https://saathi.vercel.app`.
+   | Name | Value |
+   | --- | --- |
+   | `VITE_API_URL` | your Render URL from step 1.5, no trailing slash |
+   | `VITE_FIREBASE_API_KEY` | Firebase console → Project settings → Your apps → Web app |
+   | `VITE_FIREBASE_AUTH_DOMAIN` | `saathi-f5b30.firebaseapp.com` |
+   | `VITE_FIREBASE_PROJECT_ID` | `saathi-f5b30` |
+   | `VITE_FIREBASE_APP_ID` | from the same panel |
 
-## 4. Wire them together
+4. **Deploy**, then copy the URL, e.g. `https://saathi.vercel.app`.
 
-- On Railway set `CORS_ORIGINS` to the exact Vercel origin (`https://saathi.vercel.app`, no trailing slash; several origins can be comma-separated) and `PUBLIC_API_URL` to the Railway URL. If you used a placeholder in step 2, re-run `npm run prod-env` with the real values and paste again.
-- **Firebase authorised domains**: Console > Authentication > Settings > **Authorized domains** > *Add domain*: add the Vercel domain (`saathi.vercel.app`, plus every preview or custom domain you use). Keep `localhost`. Do **not** add the Railway domain (users never sign in there).
-- WhatsApp: `PUBLIC_API_URL` must be the public https Railway URL, because Twilio downloads the voice note and QR image from `PUBLIC_API_URL/media/...`. In the Twilio sandbox every recipient first sends the join word to the sandbox number; `TWILIO_WHATSAPP_FROM` is the sandbox / sender number (with or without `whatsapp:`).
+## 3. Back to Render: join the two together
 
-## 5. Check the deployment
+Render → your service → **Environment** → set these two, then **Save** (it redeploys):
 
-```bash
-cd server
-curl https://saathi-api.up.railway.app/health                         # {"ok":true,"mockAi":false}
-npm run seed                                                           # 1 branch + 7 fake demo applications
-BANKER_EMAIL=banker@example.com BANKER_PASSWORD=... FIREBASE_WEB_API_KEY=... \
-  npm run journey:remote -- --url https://saathi-api.up.railway.app    # the whole journey, real AI when the server has MOCK_AI=false
-npm run secret-scan                                                    # nothing may be reported in the files
-```
+- `CORS_ORIGINS` = your Vercel URL exactly, e.g. `https://saathi.vercel.app` (no trailing slash; comma-separated for several)
+- `PUBLIC_API_URL` = your Render URL, e.g. `https://saathi-api.onrender.com`
 
-`journey:remote` prints `SKIP` (not a failure) when it has no Firebase web API key or banker login. With `--stub` it runs the same steps in-process.
-It leaves one signed test application behind (its ID photos are removed by the retention clean-up).
+`PUBLIC_API_URL` must be public because Twilio downloads the WhatsApp voice note and QR image from it. Until it is,
+messages still go out, but as text only.
 
-## Data retention
+## 4. Firebase: let the new domain sign people in
 
-The server runs the clean-up 30 seconds after start and then every 6 hours; `npm run retention` runs it by hand.
+1. Console → **Authentication → Settings → Authorized domains → Add domain** → your Vercel domain
+   (`saathi.vercel.app`, plus any preview or custom domain). Keep `localhost`.
+2. Console → **Authentication → Sign-in method**: **Anonymous** and **Email/Password** both enabled.
+3. Publish the rules once (the live status screen and the bank queue need them):
+   `npx firebase-tools login` then `npx firebase-tools deploy --only firestore:rules --project saathi-f5b30`.
+4. Give yourself the bank role: in `server/`, `npm run set-banker -- <your email>`, then sign out and in again.
 
-- After an application is **signed**, its Aadhaar / PAN / passbook photos are deleted. The signed PDF and the signature stay as the record.
-- Applications that were **never sent** (or were sent back and then left alone) and have been idle for more than **7 days** are deleted completely (files and audit trail).
-- Applications waiting for the bank or approved are never deleted automatically. Seeded demo rows (`demo: true`) are never touched.
+## 5. Live test (6 steps)
 
-## Emergency switches and rollbacks
+1. `<render url>/health` → `{"ok":true,"mockAi":false}`.
+2. Open `<vercel url>` on a phone, pick **ಕನ್ನಡ**, tap a speaker button: you hear Kannada (tap once if a "Tap to hear this" bar appears).
+3. Finish the interview, upload the three sample documents from `server/assets/demo-docs/clean/`.
+4. Send it to the bank, then open `<vercel url>/bank` on a laptop and sign in: the application is at the top of **To review**.
+5. **Approve** it: the customer screen flips to approved by itself and the QR appears; a WhatsApp arrives if consent was given.
+6. **Check-in** tab → scan that QR → sign → **Complete**: status becomes signed and the PDF carries the signature.
 
-| Need | Do |
-| --- | --- |
-| Run without Sarvam / Gemini (outage, quota, no signal) | Railway Variables: `MOCK_AI=true` (redeploys in about a minute). The mic then returns a canned line, so answer with "Type instead" or the option buttons. Documents are read from the fake demo cards only. Set it back to `false` afterwards. |
-| Stop WhatsApp | `NOTIFY_MODE=off` |
-| Stop the automatic clean-up | `RETENTION=off` |
-| Reset the demo rows | `npm run seed` |
-| Roll back a bad deploy | Railway / Vercel dashboard > Deployments > redeploy the previous one. |
+## 6. Cold starts (free plan)
+
+Render's free plan sleeps after about 15 minutes idle and takes 30–60 seconds to wake, so the first call after a
+pause looks broken. **Before a demo, open `<render url>/health` once** and wait for `{"ok":true}`; everything after
+that is fast. To keep it awake during an event, hit `/health` every 10 minutes (a free uptime pinger will do).
 
 ## If something is wrong
 
-| Symptom | Likely cause |
+| Symptom | Cause |
 | --- | --- |
-| Web says "not set up yet" | `VITE_FIREBASE_*` missing on Vercel (rebuild after adding them). |
-| Browser console: CORS error | `CORS_ORIGINS` on Railway is not exactly the Vercel origin. |
-| "Live updates are blocked by the database rules" | Step 1.4 not done. |
-| `/bank` sign-in says no banker access | Run `npm run set-banker -- <email>`, then sign out and in. |
-| Server log line `auth: ... rejected (...)` | The reason a token was refused (wrong Firebase project, clock, expired). |
-| Spoken answers say "assistant is busy" | Gemini free quota (about 20 requests a day) or outage: type in English, or switch to `MOCK_AI=true`. |
-| WhatsApp never arrives | Not in the Twilio sandbox, no consent on the application, demo row (never messaged), or `PUBLIC_API_URL` is not public. Look for `notify.skipped` / `notify.failed` in the application's audit trail. |
+| Web says "not set up yet" | `VITE_FIREBASE_*` missing on Vercel — add them and redeploy. |
+| Browser console: CORS error | `CORS_ORIGINS` is not exactly the Vercel origin. |
+| "Live updates are blocked by the database rules" | Step 4.3 not done. |
+| `/bank` says no banker access | `npm run set-banker -- <email>`, then sign out and in. |
+| Voice silent, text fine | Sarvam credits (HTTP 402) or quota — check with `npm run keys-check`. |
+| Documents fail with 502 | Gemini daily cap; the server already falls back across models, so add `GEMINI_API_KEY_BACKUP` in another project. |
+| Everything fails at once | Set `MOCK_AI=true` on Render for a keyless demo (canned voice, sample documents only). |
+
+## Data retention
+
+The server cleans up 30 seconds after start and every 6 hours (`npm run retention` runs it by hand): ID photos are
+deleted once an application is **signed** (the signed PDF and signature stay), and applications never sent or left
+idle for more than `RETENTION_DAYS` (7) are deleted entirely. Seeded demo rows are never touched.

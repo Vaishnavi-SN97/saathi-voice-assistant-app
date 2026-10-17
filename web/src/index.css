@@ -3613,3 +3613,23 @@ body {
 .replay-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .replay-copy strong { font-size: 16px; font-weight: 800; }
 .replay-copy span { font-size: 15px; line-height: 1.35; opacity: 0.85; }
+
+/* Eleven languages: the picker becomes a scrollable two-column grid, the switcher scrolls sideways */
+.language-cards-many {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.language-cards-many .language-card-item { padding: 14px 16px; }
+.language-cards-many .lang-script-title { font-size: 22px; }
+.lang-switcher {
+  max-width: 100%;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+}
+.lang-switcher::-webkit-scrollbar { display: none; }
+.lang-switcher button { flex: none; min-width: auto; padding: 0 12px; font-size: 14px; }
