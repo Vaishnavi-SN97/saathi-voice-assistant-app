@@ -9,27 +9,72 @@
     {
       "id": "full_name",
       "type": "text",
-      "prompt": { "en": "What is your full name?", "hi": "आपका पूरा नाम क्या है?", "kn": "ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರು ಏನು?" }
+      "label": {
+        "en": "Full name",
+        "hi": "पूरा नाम",
+        "kn": "ಪೂರ್ಣ ಹೆಸರು"
+      },
+      "prompt": {
+        "en": "What is your full name?",
+        "hi": "आपका पूरा नाम क्या है?",
+        "kn": "ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರು ಏನು?"
+      }
     },
     {
       "id": "occupation",
       "type": "text",
-      "prompt": { "en": "What work do you do?", "hi": "आप क्या काम करते हैं?", "kn": "ನೀವು ಯಾವ ಕೆಲಸ ಮಾಡುತ್ತೀರಿ?" }
+      "label": {
+        "en": "Work",
+        "hi": "काम",
+        "kn": "ಕೆಲಸ"
+      },
+      "prompt": {
+        "en": "What work do you do?",
+        "hi": "आप क्या काम करते हैं?",
+        "kn": "ನೀವು ಯಾವ ಕೆಲಸ ಮಾಡುತ್ತೀರಿ?"
+      }
     },
     {
       "id": "monthly_income",
       "type": "number",
-      "prompt": { "en": "How much do you earn in a month, in rupees?", "hi": "आप महीने में कितने रुपये कमाते हैं?", "kn": "ನೀವು ತಿಂಗಳಿಗೆ ಎಷ್ಟು ರೂಪಾಯಿ ಗಳಿಸುತ್ತೀರಿ?" }
+      "label": {
+        "en": "Monthly income",
+        "hi": "मासिक आय",
+        "kn": "ಮಾಸಿಕ ಆದಾಯ"
+      },
+      "prompt": {
+        "en": "How much do you earn in a month, in rupees?",
+        "hi": "आप महीने में कितने रुपये कमाते हैं?",
+        "kn": "ನೀವು ತಿಂಗಳಿಗೆ ಎಷ್ಟು ರೂಪಾಯಿ ಗಳಿಸುತ್ತೀರಿ?"
+      }
     },
     {
       "id": "loan_amount",
       "type": "number",
-      "prompt": { "en": "How much loan do you need, in rupees?", "hi": "आपको कितने रुपये का ऋण चाहिए?", "kn": "ನಿಮಗೆ ಎಷ್ಟು ರೂಪಾಯಿ ಸಾಲ ಬೇಕು?" }
+      "label": {
+        "en": "Loan amount",
+        "hi": "ऋण राशि",
+        "kn": "ಸಾಲದ ಮೊತ್ತ"
+      },
+      "prompt": {
+        "en": "How much loan do you need, in rupees?",
+        "hi": "आपको कितने रुपये का ऋण चाहिए?",
+        "kn": "ನಿಮಗೆ ಎಷ್ಟು ರೂಪಾಯಿ ಸಾಲ ಬೇಕು?"
+      }
     },
     {
       "id": "loan_purpose",
       "type": "text",
-      "prompt": { "en": "What will you use the loan for?", "hi": "आप ऋण का उपयोग किसलिए करेंगे?", "kn": "ನೀವು ಸಾಲವನ್ನು ಯಾವುದಕ್ಕೆ ಬಳಸುತ್ತೀರಿ?" }
+      "label": {
+        "en": "Loan purpose",
+        "hi": "ऋण का उद्देश्य",
+        "kn": "ಸಾಲದ ಉದ್ದೇಶ"
+      },
+      "prompt": {
+        "en": "What will you use the loan for?",
+        "hi": "आप ऋण का उपयोग किसलिए करेंगे?",
+        "kn": "ನೀವು ಸಾಲವನ್ನು ಯಾವುದಕ್ಕೆ ಬಳಸುತ್ತೀರಿ?"
+      }
     }
   ]
 }

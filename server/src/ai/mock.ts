@@ -11,3 +11,15 @@ export function mockTts(_text: string, _lang: string): Buffer {
 }
 
 export const mockStt = async (_wav: Buffer, _lang?: string) => "mock transcript";
+
+/** Deterministic extractor for MOCK_AI: numbers = first digit run, text = the trimmed utterance. */
+export const mockExtractor = {
+  async extractAnswer(q: { type: string }, text: string, _lang: string) {
+    const t = text.trim();
+    if (q.type === "number") {
+      const digits = t.replace(/[\u0966-\u096F]/g, (c) => String(c.charCodeAt(0) - 0x0966)).replace(/,/g, "").match(/\d+/);
+      return { value: digits ? Number(digits[0]) : null };
+    }
+    return { value: t && t.length <= 100 ? t : null };
+  },
+};

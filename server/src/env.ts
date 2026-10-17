@@ -11,6 +11,8 @@ const schema = z.object({
   FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
   SARVAM_API_KEY: z.string().optional(),
+  GEMINI_API_KEY_BACKUP: z.string().optional(),
+  GEMINI_MODEL: z.string().optional(),
 });
 
 export type Env = z.infer<typeof schema>;

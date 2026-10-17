@@ -25,6 +25,7 @@ export const applicationsRouter = ({ store, media, ai, ttsCache }: Ctx) =>
         consent: { given: true, at: now, formVersion: form.version, text: form.consent[lang] },
         currentQuestion: q.id,
         answers: {},
+        interview: { state: "asking", pending: null, attempts: 0 },
         createdAt: now,
         updatedAt: now,
       });

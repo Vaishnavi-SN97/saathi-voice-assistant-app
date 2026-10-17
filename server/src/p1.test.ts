@@ -10,7 +10,8 @@ import { MemoryStore } from "./store.js";
 
 describe("status transitions", () => {
   it("allows the documented flow", () => {
-    assert.ok(canTransition("draft", "submitted"));
+    assert.ok(canTransition("draft", "docs_pending"));
+    assert.ok(canTransition("docs_pending", "submitted"));
     assert.ok(canTransition("submitted", "in_review"));
     assert.ok(canTransition("in_review", "approved"));
     assert.ok(canTransition("needs_info", "submitted"));
