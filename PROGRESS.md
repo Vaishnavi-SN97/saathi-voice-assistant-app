@@ -31,6 +31,16 @@
 
 - [x] P5 documents (extractDoc, POST /documents/extract, POST /applications/:id/check, fake demo docs in server/assets/demo-docs)
 
+- [x] P6 pdf, submit, review, QR, check-in, sign, WhatsApp notify (server/scripts/run-journey.ts, `npm run journey`)
+
+## P6 decisions
+- QR: JWT {aid, jti, typ:"qr"} HS256 with QR_JWT_SECRET, 3 days; the QR image encodes the token. `application.qr` = {jti, expiresAt, usedAt} plus `token` (extra) so the customer app can draw the QR. The PNG is also in the media store as `qr-<jti>` and goes to WhatsApp as mediaUrl. /checkin/verify does not consume the QR; /sign does (usedAt). A used QR is rejected by both with 409 qr_used.
+- /submit re-evaluates (blocking mismatch or unconfirmed answer -> 409 not_eligible with the list), builds the PDF itself, sets metrics.readyAt. /pdf can also be called alone; after signing the PDF is re-issued with the signature embedded.
+- /review, /checkin/verify and /sign are banker-only (403 otherwise). send_back requires a note; note -> Sarvam translate (skipped for English) -> mp3 via ttsCached -> WhatsApp text + audio.
+- sent_back -> needs_fix happens on the customer's next /check; uploads are allowed while sent_back.
+- Notifier never throws; audit records notify.sent / skipped(reason) / failed without phone number or text. NOTIFY_MODE=off, no consent, bad phone or missing Twilio credentials all skip. TWILIO_WHATSAPP_FROM may be given with or without the whatsapp: prefix.
+- Real Twilio was NOT called (tests use a fake sender): WhatsApp mediaUrl must be publicly reachable, so it only works once PUBLIC_API_URL is a public URL; the Twilio sandbox also needs the recipient to have joined it.
+
 ## P5 decisions
 - Check: any blocking mismatch moves docs_pending -> needs_fix; otherwise the status stays and `readiness.eligible=true` (POST /submit in P6 does the move to ready_for_review). mistakesCaught counts each (code, document) once, the first time it is caught.
 - Documents are uploaded only while status is docs_pending or needs_fix. PAN number and IFSC are kept in `fields`; the Aadhaar number is reduced to aadhaarLast4 + valid. Account numbers are never read.
@@ -49,6 +59,7 @@
 - `server/src/services/interview-engine.ts`: read-back sentences, "didn't catch that", "say yes or no", "let's type it", Yes/No words.
 - `server/src/services/scam-shield.ts`: scam warning (hi, kn). SPEC's English wording is exact; the translations are mine.
 - `server/src/services/mismatches.ts` (all 8 messages + document names आधार/पैन कार्ड/पासबुक, ಆಧಾರ್/ಪ್ಯಾನ್ ಕಾರ್ಡ್/ಪಾಸ್‌ಬುಕ್) and `readiness.ts` (to-dos), hi + kn.
+- `server/src/services/notify.ts`: all 5 WhatsApp messages (hi, kn).
 - `server/src/services/gemini.ts`: none (prompts are English). Demo docs are English only.
 - `server/src/services/yesno.ts`: hi/kn yes/no word lists (colloquial variants may be missing).
 - Watch: formal vs informal "you" (आप / ನೀವು), "whatsapp" spelling (व्हाट्सऐप / ವಾಟ್ಸಾಪ್), how dates and digits are read aloud.

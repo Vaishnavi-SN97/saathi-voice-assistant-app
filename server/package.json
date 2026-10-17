@@ -10,7 +10,8 @@
     "set-banker": "tsx scripts/set-banker-claim.ts",
     "interview": "tsx scripts/run-interview.ts",
     "make-docs": "tsx scripts/make-fake-docs.ts",
-    "docs": "tsx scripts/run-documents.ts"
+    "docs": "tsx scripts/run-documents.ts",
+    "journey": "tsx scripts/run-journey.ts"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",

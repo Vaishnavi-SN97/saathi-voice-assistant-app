@@ -8,8 +8,8 @@ import { AppError } from "../errors.js";
 import { compressImage } from "../fileStore.js";
 import { isBlurry } from "../services/image-quality.js";
 import { normalizeDob } from "../services/matcher.js";
-import { buildMismatches, DOC_KINDS, makeMismatch, type DocKind, type Mismatch } from "../services/mismatches.js";
-import { computeReadiness } from "../services/readiness.js";
+import { evaluate } from "../services/evaluate.js";
+import { DOC_KINDS, makeMismatch, type Mismatch } from "../services/mismatches.js";
 import { aadhaarLast4, isValidAadhaar, isValidIfsc, isValidPan } from "../services/validators.js";
 import { assertTransition } from "../status.js";
 
@@ -23,7 +23,7 @@ const upload = multer({
 const extractBody = z.object({ appId: z.string().min(1), kind: z.enum(DOC_KINDS) });
 
 /** Documents can be added while the application is waiting for them or being fixed. */
-const EDITABLE = ["docs_pending", "needs_fix"];
+const EDITABLE = ["docs_pending", "needs_fix", "sent_back"];
 
 async function loadOwnApp(ctx: Ctx, user: AuthUser, appId: string) {
   const app = await ctx.store.get(`applications/${appId}`);
@@ -84,10 +84,7 @@ export const checkRouter = (ctx: Ctx) =>
       const appId = String(req.params.id);
       const app = await loadOwnApp(ctx, req.user!, appId);
 
-      const mismatches = buildMismatches(app);
-      const readiness = computeReadiness(app);
-      const blocking = mismatches.some((m) => m.severity === "block");
-      const eligible = !blocking && readiness.items.find((i) => i.id === "answers")!.done;
+      const { mismatches, readiness, blocking, eligible } = evaluate(app);
 
       // Count each (code, document) problem once, the first time it is caught.
       const key = (m: { code: string; doc?: string }) => `${m.code}:${m.doc ?? ""}`;
@@ -95,6 +92,8 @@ export const checkRouter = (ctx: Ctx) =>
       const fresh = mismatches.filter((m) => !seen.has(key(m))).length;
 
       let status = app.status as string;
+      // SPEC: sent_back -> needs_fix once the customer starts fixing (a check run is that signal).
+      if (status === "sent_back") { assertTransition("sent_back", "needs_fix"); status = "needs_fix"; }
       if (blocking && status === "docs_pending") { assertTransition("docs_pending", "needs_fix"); status = "needs_fix"; }
       // No blocking problem: status stays; the application is now eligible for POST /submit (-> ready_for_review).
 
@@ -107,7 +106,10 @@ export const checkRouter = (ctx: Ctx) =>
         updatedAt: new Date().toISOString(),
       });
       await audit(ctx.store, req.user!, "application.check", appId, { codes: mismatches.map((m) => m.code), score: readiness.score, eligible });
-      if (status !== app.status) await audit(ctx.store, req.user!, `status.${status}`, appId, { from: app.status });
+      if (status !== app.status) {
+        await audit(ctx.store, req.user!, `status.${status}`, appId, { from: app.status });
+        if (status === "needs_fix" && app.status === "docs_pending") await ctx.notifier.notify(appId, { ...app, status }, "needs_fix");
+      }
 
       res.json({ status, eligible, mismatches, readiness: { score: readiness.score, quickApprove: readiness.quickApprove, items: readiness.items } });
     } catch (e) { next(e); }
