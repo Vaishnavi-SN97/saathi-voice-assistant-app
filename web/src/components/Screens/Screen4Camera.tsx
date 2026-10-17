@@ -4,6 +4,7 @@ import { Icon } from "../Icons";
 import { PrimaryButton, ProgressDots, WarningBanner, BottomHelpBar } from "../UIComponents";
 import { useI18n, type Key } from "../../lib/i18n";
 import { api, ApiError } from "../../lib/api";
+import { errorKey } from "../../lib/errorText";
 import { BLUR_THRESHOLD, isBlurry, laplacianVariance } from "../../lib/blur";
 import { bitmapFromFile, bitmapFromVideo, openCamera, stopStream, toJpeg, type CameraFailure } from "../../lib/camera";
 import { DOC_KINDS, useSession, type CheckResult, type DocKind, type Issue } from "../../lib/session";
@@ -76,8 +77,7 @@ export function Screen4Camera({ onNext, onBack, onOpenHelp }: { onNext: () => vo
 
   const fail = (e: unknown, retry?: () => void) => {
     const status = e instanceof ApiError ? e.status : 0;
-    const text = status === -1 ? t("notConfigured") : status === 0 ? (navigator.onLine ? t("netError") : t("offline")) : t("genericError");
-    setError({ text, retry: status === -1 ? undefined : retry });
+    setError({ text: t(errorKey(e)), retry: status === -1 ? undefined : retry });
   };
 
   const acceptBitmap = async (bmp: ImageBitmap) => {

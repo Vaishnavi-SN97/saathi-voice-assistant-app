@@ -3,7 +3,8 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { Icon } from "../Icons";
 import { PrimaryButton, ProgressDots, WarningBanner, BottomHelpBar } from "../UIComponents";
 import { useI18n, type Key } from "../../lib/i18n";
-import { api, ApiError } from "../../lib/api";
+import { api } from "../../lib/api";
+import { errorKey } from "../../lib/errorText";
 import { useSession, type CheckResult, type DocKind, type Issue } from "../../lib/session";
 import { speakServer } from "../../lib/speak";
 import { useSpokenError } from "../../lib/spokenError";
@@ -25,8 +26,7 @@ export function Screen5Problems({ onNext, onBack, onOpenHelp }: { onNext: () => 
   useSpokenError(error?.text, msgLang);
 
   const fail = (e: unknown, retry: () => void) => {
-    const status = e instanceof ApiError ? e.status : 0;
-    setError({ text: status === -1 ? t("notConfigured") : status === 0 ? (navigator.onLine ? t("netError") : t("offline")) : t("genericError"), retry });
+    setError({ text: t(errorKey(e)), retry });
   };
 
   // Always refresh: the server is the source of truth for what is still wrong.

@@ -38,6 +38,10 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
       token = await getToken(forceRefresh);
     } catch (e) {
       if (e instanceof NotConfiguredError) throw new ApiError(-1, "not_configured", e.message);
+      // The console line is the only place the real cause is visible; auth/unauthorized-domain means
+      // this site's domain is missing from Firebase Authentication -> Settings -> Authorised domains.
+      const code = (e as { code?: string } | null)?.code;
+      console.error(`Firebase sign-in failed${code ? ` (${code})` : ""}. If the code is auth/unauthorized-domain, add ${location.hostname} to Firebase Authentication -> Settings -> Authorised domains.`);
       throw new ApiError(0, "auth_failed", "Could not sign in");
     }
 

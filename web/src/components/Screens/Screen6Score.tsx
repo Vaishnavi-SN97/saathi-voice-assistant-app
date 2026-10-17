@@ -4,6 +4,7 @@ import { Icon } from "../Icons";
 import { PrimaryButton, ProgressDots, ChecklistRow, WarningBanner, BottomHelpBar } from "../UIComponents";
 import { useI18n, type Key } from "../../lib/i18n";
 import { api, ApiError } from "../../lib/api";
+import { errorKey } from "../../lib/errorText";
 import { useSession, type CheckResult } from "../../lib/session";
 import { speakServer } from "../../lib/speak";
 import { useSpokenError } from "../../lib/spokenError";
@@ -24,8 +25,7 @@ export function Screen6Score({ onNext, onBack, onOpenHelp }: { onNext: () => voi
   useSpokenError(error?.text ?? (notEligible ? t("notEligible") : null), msgLang);
 
   const fail = (e: unknown, retry: () => void) => {
-    const status = e instanceof ApiError ? e.status : 0;
-    setError({ text: status === -1 ? t("notConfigured") : status === 0 ? (navigator.onLine ? t("netError") : t("offline")) : t("genericError"), retry });
+    setError({ text: t(errorKey(e)), retry });
   };
 
   const load = useCallback(async () => {
