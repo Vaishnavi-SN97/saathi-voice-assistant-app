@@ -87,13 +87,18 @@ export function createApp(deps: Deps) {
   // CORS
   // --------------------------------------------------
 
+  // A trailing slash makes an origin never match, which is the usual cause of a CORS failure
+  // after someone pastes the site URL into CORS_ORIGINS, so normalise before comparing.
   const allowedOrigins = [
-    "https://saathi-voice-assistant-app.onrender.com",
-    "http://localhost:5173",
-    ...env.CORS_ORIGINS
-      .split(",")
-      .map((origin) => origin.trim())
-      .filter(Boolean),
+    ...new Set(
+      [
+        "https://saathi-voice-assistant-app.onrender.com",
+        "http://localhost:5173",
+        ...env.CORS_ORIGINS.split(","),
+      ]
+        .map((origin) => origin.trim().replace(/\/+$/, ""))
+        .filter(Boolean)
+    ),
   ];
 
   app.use(
@@ -133,6 +138,17 @@ export function createApp(deps: Deps) {
     res.status(200).json({
       ok: true,
       mockAi: env.MOCK_AI,
+    });
+  });
+
+  // A reachable root makes the deployment diagnosable: this answer proves the request reached
+  // Express, so a 404 from Render's edge (x-render-routing: no-server) can never be mistaken
+  // for an application-level 404 again.
+  app.get("/", (_req, res) => {
+    res.status(200).json({
+      ok: true,
+      service: "saathi-api",
+      health: "/health",
     });
   });
 
