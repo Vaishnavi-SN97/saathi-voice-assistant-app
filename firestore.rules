@@ -1,0 +1,17 @@
+rules_version = '2';
+// All writes go through the Express server (Admin SDK bypasses these rules).
+// Clients may read only their own application doc (or any, for bankers).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isBanker() { return request.auth != null && request.auth.token.role == 'banker'; }
+
+    match /applications/{appId} {
+      allow read: if request.auth != null && (resource.data.ownerUid == request.auth.uid || isBanker());
+      allow write: if false;
+      match /files/{kind} { allow read, write: if false; }
+    }
+    match /audit/{id} { allow read, write: if false; }
+    match /media/{id} { allow read, write: if false; }
+    match /{other=**} { allow read, write: if false; }
+  }
+}

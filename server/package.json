@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
-    "test": "tsx --test \"src/**/*.test.ts\""
+    "test": "tsx --test src/*.test.ts",
+    "set-banker": "tsx scripts/set-banker-claim.ts"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",

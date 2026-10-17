@@ -1,18 +1,7 @@
-import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
+import { createApp } from "./app.js";
+import { loadEnv } from "./env.js";
+import { firebaseDeps } from "./firebase.js";
 
-export const app = express();
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
-
-app.get("/health", (_req, res) => {
-  res.json({ ok: true });
-});
-
-const port = Number(process.env.PORT) || 3001;
-if (process.env.NODE_ENV !== "test") {
-  app.listen(port, () => console.log(`saathi server on :${port}`));
-}
+const env = loadEnv();
+const app = createApp({ env, ...firebaseDeps(env) });
+app.listen(env.PORT, () => console.log(`saathi server on :${env.PORT} (MOCK_AI=${env.MOCK_AI})`));
