@@ -39,6 +39,20 @@ const SENT_BACK_PREFIX: Record<Lang, string> = {
   kn: "ಸಾಥಿ: ನಿಮ್ಮ ಅರ್ಜಿಯಲ್ಲಿ ಬ್ಯಾಂಕ್‌ಗೆ ಬದಲಾವಣೆ ಬೇಕಾಗಿದೆ: ",
 };
 
+/** The form collects an Indian mobile, so a bare 10-digit number means +91. */
+export const indianMobile = (v: unknown): string | null => {
+  const d = String(v ?? "").replace(/[\s-]/g, "");
+  return /^[6-9]\d{9}$/.test(d) ? `+91${d}` : null;
+};
+
+/** A test number may be from any country: "+14155238886", "+91 98765 43210" or a bare Indian 10-digit. */
+export const toE164 = (v: unknown): string | null => {
+  const raw = String(v ?? "").replace(/[\s()-]/g, "").replace(/^whatsapp:/, "");
+  if (!raw) return null;
+  if (raw.startsWith("+")) return /^\+[1-9]\d{7,14}$/.test(raw) ? raw : null;
+  return indianMobile(raw);
+};
+
 export const messageText = (event: NotifyEvent, lang: Lang, note?: string) =>
   event === "sent_back" ? SENT_BACK_PREFIX[lang] + (note ?? "") : TEXT[event][lang];
 
@@ -76,11 +90,11 @@ export class Notifier {
 
     // Seeded demo rows carry made-up phone numbers, so they are never messaged at their own number.
     // DEMO_WHATSAPP_TO redirects them to your test phone instead, which makes a live demo possible without
-    // texting a stranger. Real applications always go to the number the customer gave.
-    const demoTo = String(this.env.DEMO_WHATSAPP_TO ?? "").replace(/[\s-]/g, "").replace(/^(\+?91)/, "");
-    const phone = app.demo === true ? demoTo : String(app.notify?.phone ?? "");
-    if (app.demo === true && !demoTo) return skip("demo_data");
-    if (!/^[6-9]\d{9}$/.test(phone)) return skip(app.demo === true ? "demo_number_invalid" : "no_phone");
+    // texting a stranger. Real applications always go to the number the customer gave (the form asks for an Indian mobile).
+    const to = app.demo === true ? toE164(this.env.DEMO_WHATSAPP_TO) : indianMobile(app.notify?.phone);
+    if (!to) return skip(app.demo === true ? (this.env.DEMO_WHATSAPP_TO ? "demo_number_invalid" : "demo_data") : "no_phone");
+    const sender = `whatsapp:${this.env.TWILIO_WHATSAPP_FROM!.replace(/^whatsapp:/, "")}`;
+    if (`whatsapp:${to}` === sender) return skip("to_equals_sender"); // the sandbox number cannot message itself
     if (!this.send) return skip("no_credentials");
 
     const lang = toLang(app.language) ?? "en";
@@ -89,8 +103,8 @@ export class Notifier {
     const publicApi = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:|\/|$)/i.test(this.env.PUBLIC_API_URL) ? null : this.env.PUBLIC_API_URL.replace(/\/$/, "");
     const withMedia = Boolean(extra.mediaId && publicApi);
     const msg: WhatsAppMessage = {
-      from: `whatsapp:${this.env.TWILIO_WHATSAPP_FROM!.replace(/^whatsapp:/, "")}`,
-      to: `whatsapp:+91${phone}`,
+      from: sender,
+      to: `whatsapp:${to}`,
       body: messageText(event, lang, extra.note),
       ...(withMedia ? { mediaUrl: [publicApi + this.media.url(extra.mediaId!)] } : {}),
     };

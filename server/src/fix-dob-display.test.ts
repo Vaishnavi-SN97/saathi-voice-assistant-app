@@ -100,6 +100,15 @@ describe("WhatsApp for seeded demo applications", () => {
     await real.n.notify("real-1", realApp, "approved");
     assert.equal(real.sent[0].to, "whatsapp:+919876543210");
 
+    // any country works, and the sandbox sender can never be the recipient
+    const intl = make({ DEMO_WHATSAPP_TO: "+1 (415) 555-0199" });
+    await intl.n.notify("demo-1", demoApp, "approved");
+    assert.equal(intl.sent[0].to, "whatsapp:+14155550199");
+
+    const selfSend = make({ DEMO_WHATSAPP_TO: "+14155238886" });
+    assert.deepEqual(await selfSend.n.notify("demo-1", demoApp, "approved"), { sent: false, reason: "to_equals_sender" });
+    assert.equal(selfSend.sent.length, 0);
+
     // consent still wins over everything
     const noConsent = make({ DEMO_WHATSAPP_TO: "9876511111" });
     assert.deepEqual(await noConsent.n.notify("demo-1", { ...demoApp, notify: { consent: false } }, "approved"), { sent: false, reason: "no_consent" });
